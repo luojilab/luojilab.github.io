@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8" />
+
+<meta name="generator" content="Hexo 4.1.0" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<title>Vue社区的路由解决方案：vue-stack-router - 罗辑思维技术博客</title>
+
+
+    <meta name="description" content="vue-router 是 Vue 官方的路由管理器，用法简单、功能强大。但在移动端场景中，特别是 hybrid 项目，我们在使用中遇到了一些问题。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Vue社区的路由解决方案：vue-stack-router">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2019&#x2F;09&#x2F;10&#x2F;FE&#x2F;vue-stack-router&#x2F;index.html">
+<meta property="og:site_name" content="罗辑思维技术博客">
+<meta property="og:description" content="vue-router 是 Vue 官方的路由管理器，用法简单、功能强大。但在移动端场景中，特别是 hybrid 项目，我们在使用中遇到了一些问题。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https:&#x2F;&#x2F;piccdn.luojilab.com&#x2F;fe-oss&#x2F;default&#x2F;MTU2ODcxMDkwOTY2.png">
+<meta property="article:published_time" content="2019-09-09T16:00:00.000Z">
+<meta property="article:modified_time" content="2019-12-09T09:27:51.908Z">
+<meta property="article:tag" content="前端">
+<meta property="article:tag" content="开源项目">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https:&#x2F;&#x2F;piccdn.luojilab.com&#x2F;fe-oss&#x2F;default&#x2F;MTU2ODcxMDkwOTY2.png">
+
+
+
+
+
+
+
+<link rel="icon" href="/images/favicon.svg">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+<style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+    
+    
+    
+    
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+    
+    
+    
+    
+    
+    
+    
+    <link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="Vue社区的路由解决方案：vue-stack-router" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">首页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/tags">标签</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-6-widescreen has-order-2 column-main">
+<div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODcxMDkwOTY2.png" alt="Vue社区的路由解决方案：vue-stack-router">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                
+                <div class="level-item">jiangqiang</div>
+                
+                <time class="level-item has-text-grey" datetime="2019-09-09T16:00:00.000Z">2019-09-10</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    6 分钟 读完 (大约 858 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Vue社区的路由解决方案：vue-stack-router
+            
+        </h1>
+        <div class="content">
+            <p><a href="https://router.vuejs.org/zh/" target="_blank" rel="noopener">vue-router</a> 是 Vue 官方的路由管理器，用法简单、功能强大。但在移动端场景中，特别是 hybrid 项目，我们在使用中遇到了一些问题。</p>
+<a id="more"></a>
+
+<h2 id="vue-router"><a href="#vue-router" class="headerlink" title="vue-router"></a>vue-router</h2><h3 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h3><p>我们先理顺一下客户端路由管理器的通常特点，可以打开手机的设置 App 感受一下：</p>
+<ol>
+<li>大部分页面都有栈的概念，比如：PageA -&gt; PageB，这个时候 PageA 和 PageB 的实例都是存在的，只是绘制了 PageB ，当我们从 PageB 返回 PageA 时，PageB 销毁，PageA 展示；</li>
+<li>同一个页面可能会有多个实例，比如： PageA -&gt; PageA -&gt;Page A，像是商品 A 跳转到商品 B，其实都是商品页面，这个时候同一个页面会有多个实例存在；</li>
+<li>大部分页面都支持手势返回，比如说左滑返回。</li>
+</ol>
+<h3 id="使用困境"><a href="#使用困境" class="headerlink" title="使用困境"></a>使用困境</h3><p>因此在面向移动端的产品中，用户的操作习惯、产品的设计理念也大多趋同于以上几点。但我们从 vue-router 的角度再来审视这几个点，就会发下有这几个问题：</p>
+<ol>
+<li>vue-router 中所有注册的路由都是单例的，当出现 PageA 跳转到 PageA 的时候，并不是产生一个新的 PageA，而是当前的 PageA 重新渲染。当需要两个 PageA ，并且两个 PageA 都需要有自己不同的状态时，这个场景用 vue-router 解决会比较麻烦。</li>
+<li>vue-router 遵循 Web 的规范，整个路由的路径是线性的，组件实例的存活与路由无关，而是取决于是否使用了 <code>keep-alive</code> 组件。而在移动端，大部分栈式路由的场景，PageA 跳转到 PageB，A 和 B 实例都是存活的，当 PageB 返回 PageA，A 存活而 B 被销毁，显然 vue-router 无法满足这个场景。</li>
+<li>vue-router 的路由是只能 A 到 B ，没有中间态，我们无法基于 vue-router 还原原生的左滑返回功能。</li>
+</ol>
+<p>于是我们开始在社区中寻找解决方案，但遗憾的是大多方案都是基于 <code>vue-router</code> 的二次开发，并且都不满足需求和有一些 Bug。因此我们基于栈的理念开发了，针对移动端应用开发了 <code>vue-stack-router</code>。</p>
+<h2 id="vue-stack-router"><a href="#vue-stack-router" class="headerlink" title="vue-stack-router"></a>vue-stack-router</h2><h3 id="效果"><a href="#效果" class="headerlink" title="效果"></a>效果</h3><p>先放上效果图以及基于它实现的滑动返回。</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODI3OTEyMzM3.gif" alt></p>
+<h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><p>相较于 <code>vue-router</code>， <code>vue-stack-router</code> 有以下特点：</p>
+<ol>
+<li>基于栈的路由管理</li>
+<li>路由间数据传递</li>
+<li>细粒度、可定制的路由过渡效果</li>
+<li>完善而独立的路由导航钩子，不需要处理组件复用的逻辑（vue-router 的 <code>beforeRouteUpdate</code>）</li>
+<li>支持预渲染模式</li>
+</ol>
+<p>具体文档见  <a href="https://luojilab.github.io/vue-stack-router/#/" target="_blank" rel="noopener">vue-stack-router</a> ， 相较于 <code>vue-router</code> ，<code>vue-stack-router</code> 的功能在一些方面依然不够完善和强大，也希望感兴趣的同学能一起来完善这个库。放上 github 地址 <a href="https://github.com/luojilab/vue-stack-router" target="_blank" rel="noopener">https://github.com/luojilab/vue-stack-router</a> ，欢迎 pr/Issues/star。</p>
+<p>后续文章会解析整个 <code>vue-stack-router</code> 设计和实现过程，欢迎大家关注。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/%E5%89%8D%E7%AB%AF/" rel="tag">前端</a>, <a class="has-link-grey -link" href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/" rel="tag">开源项目</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/09/20/Technical/process/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">【八里庄技术沙龙-13 期】进度服务重构之路</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/08/27/BigData/tutorial-cm-yarn-hive-sentry-hue/">
+                <span class="level-item">Yarn 资源隔离与访问控制指北</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left is-sticky">
+    
+        
+
+    <div class="card widget" id="toc">
+        <div class="card-content">
+            <div class="menu">
+                <h3 class="menu-label">
+                    目录
+                </h3>
+                <ul class="menu-list"><li>
+        <a class="is-flex" href="#vue-router">
+        <span class="has-mr-6">1</span>
+        <span>vue-router</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#原理">
+        <span class="has-mr-6">1.1</span>
+        <span>原理</span>
+        </a></li><li>
+        <a class="is-flex" href="#使用困境">
+        <span class="has-mr-6">1.2</span>
+        <span>使用困境</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#vue-stack-router">
+        <span class="has-mr-6">2</span>
+        <span>vue-stack-router</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#效果">
+        <span class="has-mr-6">2.1</span>
+        <span>效果</span>
+        </a></li><li>
+        <a class="is-flex" href="#特点">
+        <span class="has-mr-6">2.2</span>
+        <span>特点</span>
+        </a></li></ul></li></ul>
+            </div>
+        </div>
+    </div>
+
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                标签
+            </h3>
+            <div class="field is-grouped is-grouped-multiline">
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Android/">
+                        <span class="tag">Android</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Docker/">
+                        <span class="tag">Docker</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Elasticsearch/">
+                        <span class="tag">Elasticsearch</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Java/">
+                        <span class="tag">Java</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Kubernetes/">
+                        <span class="tag">Kubernetes</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/NodeJs/">
+                        <span class="tag">NodeJs</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Yarn/">
+                        <span class="tag">Yarn</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+                        <span class="tag">八里庄技术沙龙</span>
+                        <span class="tag is-grey">4</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%89%8D%E7%AB%AF/">
+                        <span class="tag">前端</span>
+                        <span class="tag is-grey">5</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+                        <span class="tag">大数据</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">
+                        <span class="tag">并发编程</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/">
+                        <span class="tag">开源项目</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">
+                        <span class="tag">性能优化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/">
+                        <span class="tag">组件化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/">
+                        <span class="tag">计算机资源管理</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/">
+                        <span class="tag">资源调度</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered" style="flex-shrink: 1">
+                <div>
+                    
+                    <figure class="image is-128x128 has-mb-6">
+                        <img class="" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="罗辑思维技术团队">
+                    </figure>
+                    
+                    <p class="is-size-4 is-block">
+                        罗辑思维技术团队
+                    </p>
+                    
+                    
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <a href="/archives">
+                        <p class="title has-text-weight-normal">
+                            13
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <a href="/categories">
+                        <p class="title has-text-weight-normal">
+                            4
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <a href="/tags">
+                        <p class="title has-text-weight-normal">
+                            16
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/luojilab" target="_blank">
+                关注我</a>
+        </div>
+        
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/luojilab">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Website" href="https://www.igetget.com">
+                
+                <i class="fab fa-chrome"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2019/11/08/FE/grid/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTYyODQwMTc5.png" alt="Grid 布局初探">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-07T16:00:00.000Z">2019-11-08</time></div>
+                    <a href="/2019/11/08/FE/grid/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Grid 布局初探</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/11/07/Technical/ddmvvm-android/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MzQ0NjI1NDI4.png" alt="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-06T16:00:00.000Z">2019-11-07</time></div>
+                    <a href="/2019/11/07/Technical/ddmvvm-android/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/21/Technical/k8s/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTc1MjEzMzgy.png" alt="【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-20T16:00:00.000Z">2019-10-21</time></div>
+                    <a href="/2019/10/21/Technical/k8s/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/16/BigData/java-concurrent/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTIxOTYxNzc5.jpeg" alt="Java并发编程通识">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-15T16:00:00.000Z">2019-10-16</time></div>
+                    <a href="/2019/10/16/BigData/java-concurrent/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Java并发编程通识</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/09/20/Technical/process/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU2OTI1MjA0NDAx.png" alt="【八里庄技术沙龙-13 期】进度服务重构之路">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-19T16:00:00.000Z">2019-09-20</time></div>
+                    <a href="/2019/09/20/Technical/process/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-13 期】进度服务重构之路</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            链接
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="https://www.igetget.com/join" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">得到 App 校园招聘</span>
+                    </span>
+                    <span class="level-right">
+                        <span class="level-item tag">www.igetget.com</span>
+                    </span>
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+            <span class="level-start">
+                <span class="level-item">八里庄技术沙龙</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/">
+            <span class="level-start">
+                <span class="level-item">前端</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a><ul><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/NodeJs/">
+            <span class="level-start">
+                <span class="level-item">NodeJs</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li></ul></li><li>
+        <a class="level is-marginless" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+            <span class="level-start">
+                <span class="level-item">大数据</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/Android/" style="font-size: 10px;">Android</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Elasticsearch/" style="font-size: 10px;">Elasticsearch</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/NodeJs/" style="font-size: 10px;">NodeJs</a> <a href="/tags/Yarn/" style="font-size: 10px;">Yarn</a> <a href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/" style="font-size: 15px;">八里庄技术沙龙</a> <a href="/tags/%E5%89%8D%E7%AB%AF/" style="font-size: 20px;">前端</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 10px;">大数据</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" style="font-size: 10px;">并发编程</a> <a href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/" style="font-size: 10px;">开源项目</a> <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" style="font-size: 10px;">性能优化</a> <a href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/" style="font-size: 10px;">组件化</a> <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" style="font-size: 10px;">计算机资源管理</a> <a href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" style="font-size: 10px;">资源调度</a>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+        </div>
+    
+</div>
+
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen is-hidden-touch is-hidden-desktop-only has-order-3 column-right ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered" style="flex-shrink: 1">
+                <div>
+                    
+                    <figure class="image is-128x128 has-mb-6">
+                        <img class="" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="罗辑思维技术团队">
+                    </figure>
+                    
+                    <p class="is-size-4 is-block">
+                        罗辑思维技术团队
+                    </p>
+                    
+                    
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <a href="/archives">
+                        <p class="title has-text-weight-normal">
+                            13
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <a href="/categories">
+                        <p class="title has-text-weight-normal">
+                            4
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <a href="/tags">
+                        <p class="title has-text-weight-normal">
+                            16
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/luojilab" target="_blank">
+                关注我</a>
+        </div>
+        
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/luojilab">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Website" href="https://www.igetget.com">
+                
+                <i class="fab fa-chrome"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2019/11/08/FE/grid/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTYyODQwMTc5.png" alt="Grid 布局初探">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-07T16:00:00.000Z">2019-11-08</time></div>
+                    <a href="/2019/11/08/FE/grid/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Grid 布局初探</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/11/07/Technical/ddmvvm-android/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MzQ0NjI1NDI4.png" alt="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-06T16:00:00.000Z">2019-11-07</time></div>
+                    <a href="/2019/11/07/Technical/ddmvvm-android/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/21/Technical/k8s/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTc1MjEzMzgy.png" alt="【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-20T16:00:00.000Z">2019-10-21</time></div>
+                    <a href="/2019/10/21/Technical/k8s/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/16/BigData/java-concurrent/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTIxOTYxNzc5.jpeg" alt="Java并发编程通识">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-15T16:00:00.000Z">2019-10-16</time></div>
+                    <a href="/2019/10/16/BigData/java-concurrent/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Java并发编程通识</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/09/20/Technical/process/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU2OTI1MjA0NDAx.png" alt="【八里庄技术沙龙-13 期】进度服务重构之路">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-19T16:00:00.000Z">2019-09-20</time></div>
+                    <a href="/2019/09/20/Technical/process/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-13 期】进度服务重构之路</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            链接
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="https://www.igetget.com/join" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">得到 App 校园招聘</span>
+                    </span>
+                    <span class="level-right">
+                        <span class="level-item tag">www.igetget.com</span>
+                    </span>
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+            <span class="level-start">
+                <span class="level-item">八里庄技术沙龙</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/">
+            <span class="level-start">
+                <span class="level-item">前端</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a><ul><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/NodeJs/">
+            <span class="level-start">
+                <span class="level-item">NodeJs</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li></ul></li><li>
+        <a class="level is-marginless" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+            <span class="level-start">
+                <span class="level-item">大数据</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/Android/" style="font-size: 10px;">Android</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Elasticsearch/" style="font-size: 10px;">Elasticsearch</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/NodeJs/" style="font-size: 10px;">NodeJs</a> <a href="/tags/Yarn/" style="font-size: 10px;">Yarn</a> <a href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/" style="font-size: 15px;">八里庄技术沙龙</a> <a href="/tags/%E5%89%8D%E7%AB%AF/" style="font-size: 20px;">前端</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 10px;">大数据</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" style="font-size: 10px;">并发编程</a> <a href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/" style="font-size: 10px;">开源项目</a> <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" style="font-size: 10px;">性能优化</a> <a href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/" style="font-size: 10px;">组件化</a> <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" style="font-size: 10px;">计算机资源管理</a> <a href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" style="font-size: 10px;">资源调度</a>
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+    
+    
+</div>
+
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="Vue社区的路由解决方案：vue-stack-router" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2019 jiangqiang&nbsp;
+                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+<script>
+var IcarusThemeSettings = {
+    article: {
+        highlight: {
+            clipboard: true,
+            fold: 'unfolded'
+        }
+    }
+};
+</script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+
+
+
+    
+    
+<script src="/js/animation.js"></script>
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+<script src="/js/gallery.js" defer></script>
+
+    
+    
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+    
+    
+<!-- <a id="back-to-top" title="回到顶端" href="javascript:;"> -->
+<a id="back-to-top" title="回到顶端">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

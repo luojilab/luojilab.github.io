@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8" />
+
+<meta name="generator" content="Hexo 4.1.0" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<title>Chrome扩展开发科普 - 罗辑思维技术博客</title>
+
+
+    <meta name="description" content="chrome 扩展是什么chrome 扩展是用传统的 HTML、CSS、JS、图片等静态资源开发并最终打包成后缀为 .crx 的一个压缩包。所以，它和我们平常开发的页面没有多大的区别，所以如果你想引入前端开发所用的各种框架，组件库，构建工具也都是可以的。主要区别只有 2 个:  扩展的页面、js 和普通的页面运行位置不同 扩展可以调用 chrome 提供的更多的 API 来增强我们扩展的能力">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Chrome扩展开发科普">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2019&#x2F;08&#x2F;20&#x2F;FE&#x2F;chrome&#x2F;index.html">
+<meta property="og:site_name" content="罗辑思维技术博客">
+<meta property="og:description" content="chrome 扩展是什么chrome 扩展是用传统的 HTML、CSS、JS、图片等静态资源开发并最终打包成后缀为 .crx 的一个压缩包。所以，它和我们平常开发的页面没有多大的区别，所以如果你想引入前端开发所用的各种框架，组件库，构建工具也都是可以的。主要区别只有 2 个:  扩展的页面、js 和普通的页面运行位置不同 扩展可以调用 chrome 提供的更多的 API 来增强我们扩展的能力">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https:&#x2F;&#x2F;piccdn.luojilab.com&#x2F;fe-oss&#x2F;default&#x2F;MTU2ODYzMjYxNjU1.png">
+<meta property="article:published_time" content="2019-08-19T16:00:00.000Z">
+<meta property="article:modified_time" content="2019-12-09T09:27:51.903Z">
+<meta property="article:tag" content="前端">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https:&#x2F;&#x2F;piccdn.luojilab.com&#x2F;fe-oss&#x2F;default&#x2F;MTU2ODYzMjYxNjU1.png">
+
+
+
+
+
+
+
+<link rel="icon" href="/images/favicon.svg">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+<style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+    
+    
+    
+    
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+    
+    
+    
+    
+    
+    
+    
+    <link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="Chrome扩展开发科普" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">首页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/tags">标签</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-6-widescreen has-order-2 column-main">
+<div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODYzMjYxNjU1.png" alt="Chrome扩展开发科普">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                
+                <div class="level-item">sunguoqiang</div>
+                
+                <time class="level-item has-text-grey" datetime="2019-08-19T16:00:00.000Z">2019-08-20</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    20 分钟 读完 (大约 2975 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Chrome扩展开发科普
+            
+        </h1>
+        <div class="content">
+            <h2 id="chrome-扩展是什么"><a href="#chrome-扩展是什么" class="headerlink" title="chrome 扩展是什么"></a>chrome 扩展是什么</h2><p>chrome 扩展是用传统的 HTML、CSS、JS、图片等静态资源开发并最终打包成后缀为 <code>.crx</code> 的一个压缩包。所以，它和我们平常开发的页面没有多大的区别，所以如果你想引入前端开发所用的各种框架，组件库，构建工具也都是可以的。主要区别只有 2 个:</p>
+<ol>
+<li>扩展的页面、js 和普通的页面运行位置不同</li>
+<li>扩展可以调用 chrome 提供的更多的 API 来增强我们扩展的能力</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="chrome-扩展的安装方式"><a href="#chrome-扩展的安装方式" class="headerlink" title="chrome 扩展的安装方式"></a>chrome 扩展的安装方式</h2><p>扩展的安装方式有 3 种：</p>
+<ol>
+<li>通过 chrome 扩展商店，下载安装</li>
+<li>在其他网站下载打包好的 <code>.crx</code> 压缩包，把压缩包直接拖拽到 chrome 的扩展管理页面</li>
+<li>如果是自己开发的扩展，可以在扩展管理页面，打开开发者模式，手动加载已解压的扩展程序，进行本地调试</li>
+</ol>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODI4MzU1NTg3.png" alt="install.png"></p>
+<h2 id="chrome-扩展的展现形式"><a href="#chrome-扩展的展现形式" class="headerlink" title="chrome 扩展的展现形式"></a>chrome 扩展的展现形式</h2><p>这里只简单地介绍几种经常见到的，还有更多的展现形式，大家感兴趣可以去官方文档详细了解</p>
+<ol>
+<li>点击地址栏右侧 icon 会有页面弹出，这个大多数扩展都会有，主要是扩展的设置或者功能的入口</li>
+<li>页面修饰内容：通过添加 DOM 对页面赋予新功能，比如 <code>Octotree</code> (对 gitub 项目页面做导航)</li>
+<li>页面右键菜单：定制在页面内右键弹出的菜单，很多划线翻译的扩展都利用了这个功能</li>
+<li>覆盖 chrome 默认页面： chrome 有的页面支持开发者自定义，比如 Momentum 就覆盖了默认的 New Tab 页面</li>
+<li>devtool 工具：这个是开发者经常用到的 比如 <code>vue-devtool</code> 等框架提供的调试工具</li>
+</ol>
+<h2 id="开发介绍"><a href="#开发介绍" class="headerlink" title="开发介绍"></a>开发介绍</h2><p>具体扩展各个组成部分的学习，我们以一个很简单的例子为基础进行介绍，这个扩展是一个为页面添加回到顶部功能的扩展。</p>
+<h3 id="配置文件"><a href="#配置文件" class="headerlink" title="配置文件"></a>配置文件</h3><p>每一个扩展都必须要有的一个名字为 manifest.json 的配置文件，这个文件声明了此扩展用到了哪些功能，及各个功能需要用到的静态资源</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODI4MzU1NTY5.png" alt="manifest1.png"></p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODI4MzU1NTQy.png" alt="manifest2.png"></p>
+<p>这个 backToTop 扩展的配置已经在途中说明，已经有了基本的说明，下面对一些配置项做下额外的说明,全部配置可以在<a href="https://developer.chrome.com/extensions/manifest" target="_blank" rel="noopener">官网</a>查看:</p>
+<ol>
+<li>browser_action 指定了 popup 页面相关的 icon、html、tooltip 文字等配置，相似的还有一个 page_action，它的配置参数和 browser_aciton 是相同的 但是它可以通过 <code>chrome.pageAction</code> API 来动态的设置扩展在某些页面的行为</li>
+<li>icons 配置不用每个尺寸都给出，chrome 会自己选出效果最合适的 icon</li>
+<li>permissions 声明扩展需要用到的 chrome 特性</li>
+</ol>
+<h2 id="常用-API"><a href="#常用-API" class="headerlink" title="常用 API"></a>常用 API</h2><ol>
+<li>chrome.runtime</li>
+<li>chrome.tabs 对标签页进行操作、与对应标签页内容通讯</li>
+<li>chrome.storage 扩展的存储，类似 localstorage</li>
+<li>chrome.contextMenus</li>
+<li>chrome.extension</li>
+</ol>
+<h2 id="核心-JS"><a href="#核心-JS" class="headerlink" title="核心 JS"></a>核心 JS</h2><p>这部分我们说下扩展开发核心的几种 JS</p>
+<h3 id="popup"><a href="#popup" class="headerlink" title="popup"></a>popup</h3><p>popup 页面生命周期是点击弹出时，初始化，关闭时，页面也跟着销毁, 并且这个页面没有任何跨域的限制。它在我们扩展里的作用是配置页面里 backToTop icon 的样式，并存入storage。</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODI4MzU1NTI5.png" alt="popup.png"></p>
+<figure class="highlight javascript hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">chrome.storage.local.get([<span class="hljs-string">'right'</span>, <span class="hljs-string">'bottom'</span>, <span class="hljs-string">'icon'</span>], <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result</span>) </span>&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-keyword">if</span>(result) &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-comment">// 初始化</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">    right.value = result.right || <span class="hljs-string">''</span>;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">    bottom.value = result.bottom || <span class="hljs-string">''</span>;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-keyword">if</span>(result.icon) &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">      img.src = result.icon;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">      img.dataset.uploaded = <span class="hljs-literal">true</span>;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">    &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">  &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line">&#125;)</span></pre></td></tr></table></figure>
+
+<p>页面初始化时，从 storage 取出存储的值，初始化页面。<br>保存参数时，再将相关参数存入 storage</p>
+<figure class="highlight javascript hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">chrome.storage.local.set(&#123;<span class="hljs-attr">right</span>: rightVal, <span class="hljs-attr">bottom</span>: bottomVal&#125;);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-keyword">if</span>(img.dataset.uploaded) &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">    chrome.storage.local.set(&#123;<span class="hljs-attr">icon</span>: img.src&#125;);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">  &#125;</span></pre></td></tr></table></figure>
+<p>注: storage API 有 2 种 <code>storage.sync</code> 和 <code>storage.local</code> 他们的区别</p>
+<ol>
+<li>sync 会将存储的数据定时发到 chrome 的服务器，进行数据的同步，local 就只是将数据存储在本地</li>
+<li>尺寸的不同：local 和 <code>localstorage</code> 是一样的 5M. 而 sync 存储的大小只有 100K 而且对于单个 key 的值大小，以及写入的频率也有限制，毕竟要同步服务端，所以如果开发的扩展只是用于个人使用的效率提升，不打算发布，可以直接用 local 就好了</li>
+</ol>
+<h3 id="content-script"><a href="#content-script" class="headerlink" title="content-script"></a>content-script</h3><p><code>content-script</code> 是我们用来定制化页面，实现页面内扩展逻辑的地方。它的特点是：</p>
+<ol>
+<li>因为在页面内，当然可以访问 DOM 但是和页面的 js 是完全独立的，不能互相访问</li>
+<li>无法对页面内的 DOM 事件绑定 扩展里的回调，这种情况可以通过 <code>content-script</code> 创建一个 script 标签插入到 DOM 里 这个新的 script 里的函数是可以绑定的</li>
+<li>因为在页面里运行，所以是会收到跨域限制滴</li>
+<li>运行时机是随着页面的加载而运行，页面关闭也就卸载了，所以说 <code>content-script</code> 会在每一个 tab 页面里都有一份代码在运行</li>
+<li>因为在页面初始化才会运行，所以在初始加载插件时，需要刷新页面，<code>content-script</code> 才会开始运行。</li>
+<li>注入页面的 css 优先级非常高，一定要注意好类名 ID 名的设置</li>
+</ol>
+<p>那我们的 backToTop 里 <code>content-script</code> 都干了什么呢<br>首先，初始化我们页面里的 icon 并根据页面 <code>scrollTop</code> 判断当前是否需要展示 icon</p>
+<figure class="highlight javascript hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">const</span> el = <span class="hljs-built_in">document</span>.createElement(<span class="hljs-string">'div'</span>);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">el.show = <span class="hljs-literal">true</span>; <span class="hljs-comment">// 控制icon是否显示</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">el.classList.add(<span class="hljs-string">'ce-btt-container'</span>);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">el.style.opacity = target.scrollTop &gt; visibleHeight ? <span class="hljs-number">1</span> : <span class="hljs-number">0</span>;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">const</span> img = <span class="hljs-built_in">document</span>.createElement(<span class="hljs-string">'img'</span>);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">img.classList.add(<span class="hljs-string">'ce-btt-icon'</span>);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line">el.appendChild(img);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line">chrome.storage.local.get([<span class="hljs-string">'right'</span>, <span class="hljs-string">'bottom'</span>, <span class="hljs-string">'icon'</span>], <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result</span>) </span>&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">15</span></pre></td><td class="code"><pre><span class="line">  el.style.right = result &amp;&amp; result.right ? result.right + <span class="hljs-string">'px'</span> : right;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">16</span></pre></td><td class="code"><pre><span class="line">  el.style.bottom = result &amp;&amp; result.bottom ?  result.bottom + <span class="hljs-string">'px'</span> : bottom;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">17</span></pre></td><td class="code"><pre><span class="line">  img.src = result &amp;&amp; result.icon ? result.icon : chrome.runtime.getURL(<span class="hljs-string">'icons/backToTop.png'</span>);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">18</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-built_in">document</span>.body.appendChild(el);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">19</span></pre></td><td class="code"><pre><span class="line">&#125;);</span></pre></td></tr></table></figure>
+
+<p>第二步， 要想实现返回顶部，当然要给我们的 icon 绑定点击事件，以及监听 <code>scroll</code> 事件判断什么时候该隐藏展示</p>
+<figure class="highlight javascript hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">el.addEventListener(<span class="hljs-string">'click'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">e</span>) </span>&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-keyword">let</span> step = <span class="hljs-number">20</span>;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-keyword">let</span> timer = setInterval(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-keyword">if</span>(target.scrollTop &lt;= <span class="hljs-number">0</span>) &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">      clearInterval(timer);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">    &#125; <span class="hljs-keyword">else</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">      step += <span class="hljs-number">20</span>;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">      target.scrollTop -= step;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">    &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">  &#125;, <span class="hljs-number">20</span>);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line">&#125;);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">const</span> handleScroll = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-keyword">if</span>(!el.show) <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;  <span class="hljs-comment">// icon不显示时，不处理</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">15</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-keyword">if</span>(target.scrollTop &gt; visibleHeight) &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">16</span></pre></td><td class="code"><pre><span class="line">    el.style.opacity = <span class="hljs-number">1</span>;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">17</span></pre></td><td class="code"><pre><span class="line">  &#125; <span class="hljs-keyword">else</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">18</span></pre></td><td class="code"><pre><span class="line">    el.style.opacity = <span class="hljs-number">0</span>;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">19</span></pre></td><td class="code"><pre><span class="line">  &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">20</span></pre></td><td class="code"><pre><span class="line">&#125;;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">21</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">22</span></pre></td><td class="code"><pre><span class="line">container.addEventListener(<span class="hljs-string">'scroll'</span>, throttle(handleScroll, <span class="hljs-number">300</span>));</span></pre></td></tr></table></figure>
+
+<p>第三步， 如果 popup 页面有配置的变更， <code>content-script</code> 都需要立刻进行更新</p>
+<figure class="highlight javascript hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">chrome.storage.onChanged.addListener(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">changes, namespace</span>) </span>&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-keyword">if</span>(changes.bottom) &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">    el.style.bottom = <span class="hljs-string">`<span class="hljs-subst">$&#123;changes.bottom.newValue&#125;</span>px`</span>;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">  &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-keyword">if</span> (changes.right) &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">    el.style.right = <span class="hljs-string">`<span class="hljs-subst">$&#123;changes.right.newValue&#125;</span>px`</span>;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">  &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-keyword">if</span> (changes.icon) &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">    img.src = changes.icon.newValue;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">  &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line">&#125;);</span></pre></td></tr></table></figure>
+<p>注: 这里需要注意的是，因为我们要把扩展里的 icon 插入到页面，所以需要在 <code>manifest.json</code> 里配置 <code>web_accessible_resources</code> 赋予页面可以访问我们指定的扩展静态资源的权限。这是因为页面里 icon 的 src 属性是这样的</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODI4MzU1NDg4.png" alt="resource.png"></p>
+<h3 id="background"><a href="#background" class="headerlink" title="background"></a>background</h3><p><code>background</code> 可以理解为是扩展在后台一直运行的一个 JS(实际并不是)， 它在整个浏览器里只会有一个 js 在运行。在 background 的配置里，有一个 <code>persistent</code> 的配置, 当它为 true 时，background 才会一直运行，false 时，浏览器会检测长时间不活动时，自动卸载调，只有监听的事件发生时，才会重新执行，官方的说明是</p>
+<blockquote>
+<p>The only occasion to keep a background script persistently active is if the extension uses chrome.webRequest API to block or modify network requests. The webRequest API is incompatible with non-persistent background pages.</p>
+</blockquote>
+<p>所以绝大多数时候，我们把它设为 false 就可以了。另外 <code>background</code> 也是可以跨域的，<br>所以我们可以总结出，除了页面内的 js chrome 对其他的 js 都没有跨域的限制。</p>
+<p>好，我们看看我们扩展里 <code>background</code> 干了啥</p>
+<p>首先，初始时，肯定要监听浏览器的初始化事件，才可以绑定扩展关注的事件。</p>
+<figure class="highlight javascript hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">chrome.runtime.onInstalled.addEventListener(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-comment">// init extention</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">&#125;)</span></pre></td></tr></table></figure>
+
+<p>第二步，因为有的页面已经提供了返回顶部的功能，所以这个时候我们需要提供可以把我们的 icon 永久隐藏的功能，我们在 <code>background</code> 初始化的逻辑中，创建一个鼠标右键的菜单项，这个菜单项可以实现 切换我们的 icon 显示状态的功能</p>
+<figure class="highlight javascript hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">chrome.contextMenus.create(&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">    title: <span class="hljs-string">'toggle'</span>,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">    id: <span class="hljs-string">'toggle'</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">  &#125;);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">chrome.contextMenus.onClicked.addListener(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">  chrome.tabs.query(&#123;<span class="hljs-attr">active</span>: <span class="hljs-literal">true</span>, <span class="hljs-attr">currentWindow</span>: <span class="hljs-literal">true</span>&#125;, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">tabs</span>) </span>&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">    sendMsg(tabs.length ? tabs[<span class="hljs-number">0</span>].id : <span class="hljs-literal">null</span>);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">  &#125;);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">&#125;);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">sendMsg</span>(<span class="hljs-params">tabId</span>) </span>&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line">  chrome.tabs.sendMessage(tabId, <span class="hljs-string">'toggle'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">res</span>) </span>&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-built_in">console</span>.log(res);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">15</span></pre></td><td class="code"><pre><span class="line">  &#125;);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">16</span></pre></td><td class="code"><pre><span class="line">&#125;</span></pre></td></tr></table></figure>
+<p>发送消息这里我们用了 <code>chrome.tabs</code> API 因为我们每个 tab 都会有一个 <code>content-script</code> 所以需要筛选出当前所在的标签页，然后发送消息。</p>
+<p>最后，我们的 <code>content-script</code> 需要监听发送消息的事件，并切换 icon 的状态</p>
+<figure class="highlight javascript hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">chrome.runtime.onMessage.addListener(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">req, sender, respond</span>) </span>&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-keyword">if</span>(req === <span class="hljs-string">'toggle'</span>) &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-keyword">if</span> (target.scrollTop &gt; visibleHeight) &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">      el.style.opacity = el.style.opacity === <span class="hljs-string">'1'</span> ? <span class="hljs-number">0</span> : <span class="hljs-number">1</span>;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">    &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">    el.show = !el.show;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">    respond(<span class="hljs-string">'toggle success'</span>);</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">  &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">&#125;);</span></pre></td></tr></table></figure>
+<p>至此，整个扩展的功能就基本介绍完了，过程中用到的 API 这里并不作详细的介绍，详细使用还是需要大家去 <a href="https://developer.chrome.com/apps/api_index" target="_blank" rel="noopener">官网</a> 查看</p>
+<h3 id="调试"><a href="#调试" class="headerlink" title="调试"></a>调试</h3><p>最后说一下如何调试，调试个人认为还是比较麻烦的， 代码变更并没有热更新，所以需要我们手动去扩展管理页重新加载。而且几种不同的 JS 调试的位置也不同，设计通讯时经常需要在几个不同的地方来回切换</p>
+<p><code>popup</code> 调试：在弹出的窗口里，右键审查元素就可以弹出调试窗口，调试方式和普通的页面调试没有区别。</p>
+<p><code>background</code> 调试: 在管理页点击背景页，就可以弹出调试窗口了</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODI4MzU0OTQx.png" alt="bg-dev.png"></p>
+<p><code>content-script</code> 调试: 因为是在页面运行，所以调试的地方和页面 js 是在一个窗口里</p>
+<p>代码位置：在 sources tab 下选中 Content scripts 就可以看到页面加载的全部的扩展 <code>contnt-script</code> 了。</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODI4MzU1NjE5.png" alt="cs-code.png"></p>
+<p>console 输出: 在 Console tab 下拉框里选中要调试的扩展，就可以看到对应扩展的 console 输出。</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODI4MzU1NjAy.png" alt="cs-console.png"></p>
+<h2 id="打包发布"><a href="#打包发布" class="headerlink" title="打包发布"></a>打包发布</h2><p>在扩展管理页，可以打包扩展程序,打包后就可以生成 <code>.crx</code> 文件</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODI4MzU0OTE4.png" alt="bundle.png"></p>
+<p>打包之后，就可以发布了，不过发布需要先花 5$ 注册开发者，我就没有继续下去了。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在开发过程中，可以发现写一个扩展其实并不难，用到的技术都是前端每天都在用的东西。只要我们多加留心，就会发现使用 chrome 过程中有许多可以提效，优化体验的地方，这时候我们就可以试着用扩展的方式解决。总体来说，chrome 扩展是一种技术成本很低，就可以干些有趣的事情的技术</p>
+<p>参考资料：</p>
+<p><a href="https://developer.chrome.com/extensions" target="_blank" rel="noopener">官方文档</a></p>
+<p><a href="https://www.cnblogs.com/liuxianan/p/chrome-plugin-develop.html" target="_blank" rel="noopener">Chrom插件开发全攻略</a></p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/%E5%89%8D%E7%AB%AF/" rel="tag">前端</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/08/26/FE/build-a-vue-component/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">如何打造一套Vue组件库</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/08/14/Technical/ddgw/">
+                <span class="level-item">【八里庄技术沙龙-12 期】如何从零实现一个高性能的API网关</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left is-sticky">
+    
+        
+
+    <div class="card widget" id="toc">
+        <div class="card-content">
+            <div class="menu">
+                <h3 class="menu-label">
+                    目录
+                </h3>
+                <ul class="menu-list"><li>
+        <a class="is-flex" href="#chrome-扩展是什么">
+        <span class="has-mr-6">1</span>
+        <span>chrome 扩展是什么</span>
+        </a></li><li>
+        <a class="is-flex" href="#chrome-扩展的安装方式">
+        <span class="has-mr-6">2</span>
+        <span>chrome 扩展的安装方式</span>
+        </a></li><li>
+        <a class="is-flex" href="#chrome-扩展的展现形式">
+        <span class="has-mr-6">3</span>
+        <span>chrome 扩展的展现形式</span>
+        </a></li><li>
+        <a class="is-flex" href="#开发介绍">
+        <span class="has-mr-6">4</span>
+        <span>开发介绍</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#配置文件">
+        <span class="has-mr-6">4.1</span>
+        <span>配置文件</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#常用-API">
+        <span class="has-mr-6">5</span>
+        <span>常用 API</span>
+        </a></li><li>
+        <a class="is-flex" href="#核心-JS">
+        <span class="has-mr-6">6</span>
+        <span>核心 JS</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#popup">
+        <span class="has-mr-6">6.1</span>
+        <span>popup</span>
+        </a></li><li>
+        <a class="is-flex" href="#content-script">
+        <span class="has-mr-6">6.2</span>
+        <span>content-script</span>
+        </a></li><li>
+        <a class="is-flex" href="#background">
+        <span class="has-mr-6">6.3</span>
+        <span>background</span>
+        </a></li><li>
+        <a class="is-flex" href="#调试">
+        <span class="has-mr-6">6.4</span>
+        <span>调试</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#打包发布">
+        <span class="has-mr-6">7</span>
+        <span>打包发布</span>
+        </a></li><li>
+        <a class="is-flex" href="#总结">
+        <span class="has-mr-6">8</span>
+        <span>总结</span>
+        </a></li></ul>
+            </div>
+        </div>
+    </div>
+
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                标签
+            </h3>
+            <div class="field is-grouped is-grouped-multiline">
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Android/">
+                        <span class="tag">Android</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Docker/">
+                        <span class="tag">Docker</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Elasticsearch/">
+                        <span class="tag">Elasticsearch</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Java/">
+                        <span class="tag">Java</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Kubernetes/">
+                        <span class="tag">Kubernetes</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/NodeJs/">
+                        <span class="tag">NodeJs</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Yarn/">
+                        <span class="tag">Yarn</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+                        <span class="tag">八里庄技术沙龙</span>
+                        <span class="tag is-grey">4</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%89%8D%E7%AB%AF/">
+                        <span class="tag">前端</span>
+                        <span class="tag is-grey">5</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+                        <span class="tag">大数据</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">
+                        <span class="tag">并发编程</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/">
+                        <span class="tag">开源项目</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">
+                        <span class="tag">性能优化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/">
+                        <span class="tag">组件化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/">
+                        <span class="tag">计算机资源管理</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/">
+                        <span class="tag">资源调度</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered" style="flex-shrink: 1">
+                <div>
+                    
+                    <figure class="image is-128x128 has-mb-6">
+                        <img class="" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="罗辑思维技术团队">
+                    </figure>
+                    
+                    <p class="is-size-4 is-block">
+                        罗辑思维技术团队
+                    </p>
+                    
+                    
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <a href="/archives">
+                        <p class="title has-text-weight-normal">
+                            13
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <a href="/categories">
+                        <p class="title has-text-weight-normal">
+                            4
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <a href="/tags">
+                        <p class="title has-text-weight-normal">
+                            16
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/luojilab" target="_blank">
+                关注我</a>
+        </div>
+        
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/luojilab">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Website" href="https://www.igetget.com">
+                
+                <i class="fab fa-chrome"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2019/11/08/FE/grid/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTYyODQwMTc5.png" alt="Grid 布局初探">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-07T16:00:00.000Z">2019-11-08</time></div>
+                    <a href="/2019/11/08/FE/grid/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Grid 布局初探</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/11/07/Technical/ddmvvm-android/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MzQ0NjI1NDI4.png" alt="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-06T16:00:00.000Z">2019-11-07</time></div>
+                    <a href="/2019/11/07/Technical/ddmvvm-android/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/21/Technical/k8s/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTc1MjEzMzgy.png" alt="【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-20T16:00:00.000Z">2019-10-21</time></div>
+                    <a href="/2019/10/21/Technical/k8s/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/16/BigData/java-concurrent/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTIxOTYxNzc5.jpeg" alt="Java并发编程通识">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-15T16:00:00.000Z">2019-10-16</time></div>
+                    <a href="/2019/10/16/BigData/java-concurrent/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Java并发编程通识</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/09/20/Technical/process/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU2OTI1MjA0NDAx.png" alt="【八里庄技术沙龙-13 期】进度服务重构之路">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-19T16:00:00.000Z">2019-09-20</time></div>
+                    <a href="/2019/09/20/Technical/process/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-13 期】进度服务重构之路</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            链接
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="https://www.igetget.com/join" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">得到 App 校园招聘</span>
+                    </span>
+                    <span class="level-right">
+                        <span class="level-item tag">www.igetget.com</span>
+                    </span>
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+            <span class="level-start">
+                <span class="level-item">八里庄技术沙龙</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/">
+            <span class="level-start">
+                <span class="level-item">前端</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a><ul><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/NodeJs/">
+            <span class="level-start">
+                <span class="level-item">NodeJs</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li></ul></li><li>
+        <a class="level is-marginless" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+            <span class="level-start">
+                <span class="level-item">大数据</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/Android/" style="font-size: 10px;">Android</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Elasticsearch/" style="font-size: 10px;">Elasticsearch</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/NodeJs/" style="font-size: 10px;">NodeJs</a> <a href="/tags/Yarn/" style="font-size: 10px;">Yarn</a> <a href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/" style="font-size: 15px;">八里庄技术沙龙</a> <a href="/tags/%E5%89%8D%E7%AB%AF/" style="font-size: 20px;">前端</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 10px;">大数据</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" style="font-size: 10px;">并发编程</a> <a href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/" style="font-size: 10px;">开源项目</a> <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" style="font-size: 10px;">性能优化</a> <a href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/" style="font-size: 10px;">组件化</a> <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" style="font-size: 10px;">计算机资源管理</a> <a href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" style="font-size: 10px;">资源调度</a>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+        </div>
+    
+</div>
+
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen is-hidden-touch is-hidden-desktop-only has-order-3 column-right ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered" style="flex-shrink: 1">
+                <div>
+                    
+                    <figure class="image is-128x128 has-mb-6">
+                        <img class="" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="罗辑思维技术团队">
+                    </figure>
+                    
+                    <p class="is-size-4 is-block">
+                        罗辑思维技术团队
+                    </p>
+                    
+                    
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <a href="/archives">
+                        <p class="title has-text-weight-normal">
+                            13
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <a href="/categories">
+                        <p class="title has-text-weight-normal">
+                            4
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <a href="/tags">
+                        <p class="title has-text-weight-normal">
+                            16
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/luojilab" target="_blank">
+                关注我</a>
+        </div>
+        
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/luojilab">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Website" href="https://www.igetget.com">
+                
+                <i class="fab fa-chrome"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2019/11/08/FE/grid/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTYyODQwMTc5.png" alt="Grid 布局初探">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-07T16:00:00.000Z">2019-11-08</time></div>
+                    <a href="/2019/11/08/FE/grid/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Grid 布局初探</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/11/07/Technical/ddmvvm-android/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MzQ0NjI1NDI4.png" alt="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-06T16:00:00.000Z">2019-11-07</time></div>
+                    <a href="/2019/11/07/Technical/ddmvvm-android/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/21/Technical/k8s/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTc1MjEzMzgy.png" alt="【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-20T16:00:00.000Z">2019-10-21</time></div>
+                    <a href="/2019/10/21/Technical/k8s/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/16/BigData/java-concurrent/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTIxOTYxNzc5.jpeg" alt="Java并发编程通识">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-15T16:00:00.000Z">2019-10-16</time></div>
+                    <a href="/2019/10/16/BigData/java-concurrent/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Java并发编程通识</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/09/20/Technical/process/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU2OTI1MjA0NDAx.png" alt="【八里庄技术沙龙-13 期】进度服务重构之路">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-19T16:00:00.000Z">2019-09-20</time></div>
+                    <a href="/2019/09/20/Technical/process/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-13 期】进度服务重构之路</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            链接
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="https://www.igetget.com/join" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">得到 App 校园招聘</span>
+                    </span>
+                    <span class="level-right">
+                        <span class="level-item tag">www.igetget.com</span>
+                    </span>
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+            <span class="level-start">
+                <span class="level-item">八里庄技术沙龙</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/">
+            <span class="level-start">
+                <span class="level-item">前端</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a><ul><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/NodeJs/">
+            <span class="level-start">
+                <span class="level-item">NodeJs</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li></ul></li><li>
+        <a class="level is-marginless" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+            <span class="level-start">
+                <span class="level-item">大数据</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/Android/" style="font-size: 10px;">Android</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Elasticsearch/" style="font-size: 10px;">Elasticsearch</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/NodeJs/" style="font-size: 10px;">NodeJs</a> <a href="/tags/Yarn/" style="font-size: 10px;">Yarn</a> <a href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/" style="font-size: 15px;">八里庄技术沙龙</a> <a href="/tags/%E5%89%8D%E7%AB%AF/" style="font-size: 20px;">前端</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 10px;">大数据</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" style="font-size: 10px;">并发编程</a> <a href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/" style="font-size: 10px;">开源项目</a> <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" style="font-size: 10px;">性能优化</a> <a href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/" style="font-size: 10px;">组件化</a> <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" style="font-size: 10px;">计算机资源管理</a> <a href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" style="font-size: 10px;">资源调度</a>
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+    
+    
+</div>
+
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="Chrome扩展开发科普" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2019 sunguoqiang&nbsp;
+                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+<script>
+var IcarusThemeSettings = {
+    article: {
+        highlight: {
+            clipboard: true,
+            fold: 'unfolded'
+        }
+    }
+};
+</script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+
+
+
+    
+    
+<script src="/js/animation.js"></script>
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+<script src="/js/gallery.js" defer></script>
+
+    
+    
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+    
+    
+<!-- <a id="back-to-top" title="回到顶端" href="javascript:;"> -->
+<a id="back-to-top" title="回到顶端">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8" />
+
+<meta name="generator" content="Hexo 4.1.0" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<title>Elasticsearch 插件详解及实践 - 罗辑思维技术博客</title>
+
+
+    <meta name="description" content="背景介绍现在 ElasticSearch 大量应用在搜索领域，开发者可以通过其提供的多样的查询api达到希望的搜索效果，而且Elasticsearch版本也一直在不断迭代，以满足开发者的需要。但是，实际开发过程中，可能需要将搜索和自己的业务场景进行结合，来达到自定义的排序、搜索规则。Elasticsearch针对这种情况，提供了插件的功能，可以这么说，如果能够学会使用插件，那我们就有了自由扩充EL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Elasticsearch 插件详解及实践">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2019&#x2F;08&#x2F;11&#x2F;BigData&#x2F;elasticsearch&#x2F;index.html">
+<meta property="og:site_name" content="罗辑思维技术博客">
+<meta property="og:description" content="背景介绍现在 ElasticSearch 大量应用在搜索领域，开发者可以通过其提供的多样的查询api达到希望的搜索效果，而且Elasticsearch版本也一直在不断迭代，以满足开发者的需要。但是，实际开发过程中，可能需要将搜索和自己的业务场景进行结合，来达到自定义的排序、搜索规则。Elasticsearch针对这种情况，提供了插件的功能，可以这么说，如果能够学会使用插件，那我们就有了自由扩充EL">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https:&#x2F;&#x2F;piccdn.luojilab.com&#x2F;fe-oss&#x2F;default&#x2F;MTU2ODYzMjQ0MTcy.jpeg">
+<meta property="article:published_time" content="2019-08-10T16:00:00.000Z">
+<meta property="article:modified_time" content="2019-12-09T09:27:51.895Z">
+<meta property="article:tag" content="Elasticsearch">
+<meta property="article:tag" content="大数据">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https:&#x2F;&#x2F;piccdn.luojilab.com&#x2F;fe-oss&#x2F;default&#x2F;MTU2ODYzMjQ0MTcy.jpeg">
+
+
+
+
+
+
+
+<link rel="icon" href="/images/favicon.svg">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+<style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+    
+    
+    
+    
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+    
+    
+    
+    
+    
+    
+    
+    <link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="Elasticsearch 插件详解及实践" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">首页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/tags">标签</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-6-widescreen has-order-2 column-main">
+<div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODYzMjQ0MTcy.jpeg" alt="Elasticsearch 插件详解及实践">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                
+                <div class="level-item">张聪聪</div>
+                
+                <time class="level-item has-text-grey" datetime="2019-08-10T16:00:00.000Z">2019-08-11</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    14 分钟 读完 (大约 2108 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Elasticsearch 插件详解及实践
+            
+        </h1>
+        <div class="content">
+            <h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><p>现在 ElasticSearch 大量应用在搜索领域，开发者可以通过其提供的多样的查询api达到希望的搜索效果，而且Elasticsearch版本也一直在不断迭代，以满足开发者的需要。但是，实际开发过程中，可能需要将搜索和自己的业务场景进行结合，来达到自定义的排序、搜索规则。Elasticsearch针对这种情况，提供了插件的功能，可以这么说，如果能够学会使用插件，那我们就有了自由扩充ELasticsearch功能的手段,对搜索的掌控力就能提升一个档次。</p>
+<a id="more"></a>
+
+<h2 id="Es插件分类"><a href="#Es插件分类" class="headerlink" title="Es插件分类"></a>Es插件分类</h2><p><strong>插件</strong>作为ES的架构中的重要一环，ES为其开放了足够多的接口使开发者可以实现自定义的功能需求,其共支持下面十种插件，AnalysisPlugin，ScriptPlugin，SearchPlugin这三个常用插件我们在后面会更详细的讲解</p>
+<p><strong>1、AnalysisPlugin</strong><br>分析插件,用于开发者开发额外的分析功能来增强Elasticsearch自身分析功能的不足,medcl大佬的ik分词插件相信大家都用过.</p>
+<p><strong>2、ScriptPlugin</strong><br>脚本插件.会调用用户的脚本，其中主要是用在function_score查询中，使用自定义方法进行打分,我们熟知的painless脚本就是ScriptPlugin脚本</p>
+<p><strong>3、SearchPlugin</strong><br>查询插件,扩展Elasticsearch的查询功能,es 的search功能功能十分强大，有了SearchPlugin我们可以在search中增加更多查询方法，我们后续可能会在此基础上增加很多令人兴奋的查询。例如根据用户购买的书籍查询与用户相似的其他用户，例如结合模型对搜索词进行expanding。</p>
+<p><strong>4、ActionPlugi</strong><br>Restful API命令请求插件,如果Elasticsearch内置的命令如_all,cat,/cat/health等rest命令无法满足需求,开发者可以自己开发需要的rest命令，例如希望看到某个分词器的词表的命令。</p>
+<p><strong>5、ClusterPlugin</strong><br>集群管理插件,用于加强自定义对集群的管理功能，该插件可以用来扩展allocation机制，例如在进行分片选择的时候如果我们可能倾向于一些机器，</p>
+<p><strong>6、DiscoveryPlugin</strong><br>自定义发现插件，目前是使用zen协议来进行。</p>
+<p><strong>7、IngestPlugin</strong><br>预处理插件，在数据索引之前进行预处理，例如根据用户ip来增加地理信息的geoip Processor Plugin</p>
+<p><strong>8、MapperPlugin</strong><br>映射插件,加强ES的数据类型.比如增加一个attachment类型,里面可以放PDF或者WORD数据</p>
+<p><strong>9、NetworkPlugin</strong><br>网络传输插件插件,</p>
+<p><strong>10、RepositoryPlugin</strong><br>存储插件,提供快照和恢复</p>
+<h2 id="ES插件加载过程"><a href="#ES插件加载过程" class="headerlink" title="ES插件加载过程"></a>ES插件加载过程</h2><ul>
+<li>插件的加载时机是在节点启动创建的时候中会扫描Elasticsearch的安装目录下的plugins和module的插件列表，并通过PluginService进行解析插件。</li>
+<li>PluginFilter是用来识别plugin类别的一个方法，通过每个插件实现的接口将所有插件分类并分发给Elasticsearch不同的服务组件进行注册。</li>
+<li>在node不同的服务启动过程中会读取每个和自己相关的组件进行扩展，最终插件都会形成服务提供给集群使用（比如ScriptPlugin最终在ScriptService提供服务,SearchPlugin最终会在searchTransportService中提供服务）</li>
+</ul>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2NTU5Njg3MjY4.png" alt="插件加载过程"></p>
+<p><strong>plugin-descriptor.properties</strong></p>
+<p>PluginService 加载插件的元信息会从该文件中进行读取，所有插件都需要这个文件，下面两个配置比较重要，如果es版本不一致会加载失败。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">name=$&#123;project.name&#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">description=$&#123;project.description&#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">version=$&#123;project.version&#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">classname=$&#123;elasticsearch.plugin.classname&#125;  插件入口</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">java.version=<span class="hljs-number">1.8</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">elasticsearch.version=$&#123;elasticsearch.version&#125;   插件对应es版本</span></pre></td></tr></table></figure>
+
+<h2 id="Example-AnalysisPlugin"><a href="#Example-AnalysisPlugin" class="headerlink" title="Example:AnalysisPlugin"></a>Example:AnalysisPlugin</h2><p>这里我们就使用十分流行的ik分词来解释，<a href="https://github.com/medcl/elasticsearch-analysis-ik" target="_blank" rel="noopener">ik</a>是一款十分流行的中文分词器,其能支持粗细力度的中文分词，其就是一款基于AnalysisPlugin实现的插件</p>
+<h3 id="IK分词类图"><a href="#IK分词类图" class="headerlink" title="IK分词类图"></a>IK分词类图</h3><p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2NTU5Njg5NDQy.png" alt="Ik分词类图"></p>
+<p>我们可以看到ik分词主要实现了接口中的getTokenizers()和getAnalyzers()，其调用流程如下：</p>
+<ol>
+<li>其在Node初始化时就会将pluginService的中的AnalysisPlugin插件加载到AnalysisModule中。</li>
+<li>在AnalysisModule中进行分词器和分词器的注册。</li>
+<li>在注册的过程其实就是将AnalysisIkPlugin的getTokenizers和getAnalyzers返回的分析器和分词器放入key是名称，value是工厂类的map中。</li>
+</ol>
+<p>我们这里只看分词器，实际上被注册到分词组中的是一个工厂类，其返回一个继承自Tokenizer的IK Tokenizer，这里最核心的就是<strong>incrementToken()</strong>,其会进行循环词语切分，最终将词语切分完毕，如果自定义分词器，此处就是决定分词的方法。</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2NTU5Njg4OTIw.png" alt="时序图"></p>
+<h3 id="自定义分词器步骤"><a href="#自定义分词器步骤" class="headerlink" title="自定义分词器步骤"></a>自定义分词器步骤</h3><p>如果我们要实现我们自己的分词器的话其实只要进行如下几步</p>
+<ol>
+<li><p>继承AnalysisPlugin接口和Plugin接口，实现其中获得工厂类的getTokenizers。</p>
+</li>
+<li><p>实现自定义分词的工厂类方法，其要继承自AbstractTokenizerFactory,实现create来返回自定义测分词类。</p>
+</li>
+<li><p>实现自定义分词类其继承自Lucene的Tokenizer抽象类，将实现incrementToken方法。</p>
+</li>
+<li><p>最终将程序中加入plugin-descriptor.properties组价描述文件，打包放入plugin文件中即可。</p>
+</li>
+</ol>
+<h2 id="我们的实践"><a href="#我们的实践" class="headerlink" title="我们的实践"></a>我们的实践</h2><h3 id="ScriptPlugin"><a href="#ScriptPlugin" class="headerlink" title="ScriptPlugin"></a>ScriptPlugin</h3><p><strong>现状</strong><br>容错在搜索中十分常见,但我们经过对搜索无结果日志分析发现对于有很大一部分错误都发生在拼音相同但字写错的了情况。</p>
+<p><strong>无结果日志</strong></p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">事件	          总数	  平均	  20190624	20190625	20190626 </span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">A-&gt;总次数,马徐俊	8	    1.1429	    0	      0	           0</span></pre></td></tr></table></figure>
+
+<p><strong>搜索词日志</strong></p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">搜索关键词    搜索次数     搜索人数</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">逻辑思维       168          137</span></pre></td></tr></table></figure>
+
+<h4 id="问题及解决"><a href="#问题及解决" class="headerlink" title="问题及解决"></a>问题及解决</h4><p>所以我们希望能够实现拼音级别的容错,然后又不希望字错的字太多，就使用如下DSL</p>
+<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">&#123;<span class="hljs-attr">"query"</span>:&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-attr">"bool"</span>:&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-attr">"filter"</span>:[</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">        &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">          <span class="hljs-attr">"multi_match"</span>:&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">              <span class="hljs-attr">"query"</span>:<span class="hljs-string">"&#123;&#123;.Query&#125;&#125;"</span>,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">              <span class="hljs-attr">"analyzer"</span>:<span class="hljs-string">"standard"</span>,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">              <span class="hljs-attr">"fields"</span>:[</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">                  <span class="hljs-string">"title.standard"</span>,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">                  <span class="hljs-string">"author.standard"</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line">              ],</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line">              <span class="hljs-attr">"minimum_should_match"</span>:<span class="hljs-string">"50%"</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line">          &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line">        &#125;,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">15</span></pre></td><td class="code"><pre><span class="line">        &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">16</span></pre></td><td class="code"><pre><span class="line">          <span class="hljs-attr">"bool"</span>:&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">17</span></pre></td><td class="code"><pre><span class="line">            <span class="hljs-attr">"should"</span>:[</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">18</span></pre></td><td class="code"><pre><span class="line">                &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">19</span></pre></td><td class="code"><pre><span class="line">                  <span class="hljs-attr">"match_phrase"</span>:&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">20</span></pre></td><td class="code"><pre><span class="line">                      <span class="hljs-attr">"author.pinyin"</span>:&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">21</span></pre></td><td class="code"><pre><span class="line">                          <span class="hljs-attr">"query"</span>:<span class="hljs-string">"&#123;&#123;.Query&#125;&#125;"</span>,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">22</span></pre></td><td class="code"><pre><span class="line">                          <span class="hljs-attr">"analyzer"</span>:<span class="hljs-string">"pinyin"</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">23</span></pre></td><td class="code"><pre><span class="line">                      &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">24</span></pre></td><td class="code"><pre><span class="line">                  &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">25</span></pre></td><td class="code"><pre><span class="line">                &#125;,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">26</span></pre></td><td class="code"><pre><span class="line">                &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">27</span></pre></td><td class="code"><pre><span class="line">                  <span class="hljs-attr">"match_phrase"</span>:&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">28</span></pre></td><td class="code"><pre><span class="line">                      <span class="hljs-attr">"title.pinyin"</span>:&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">29</span></pre></td><td class="code"><pre><span class="line">                          <span class="hljs-attr">"query"</span>:<span class="hljs-string">"&#123;&#123;.Query&#125;&#125;"</span>,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">30</span></pre></td><td class="code"><pre><span class="line">                          <span class="hljs-attr">"analyzer"</span>:<span class="hljs-string">"pinyin"</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">31</span></pre></td><td class="code"><pre><span class="line">                      &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">32</span></pre></td><td class="code"><pre><span class="line">                  &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">33</span></pre></td><td class="code"><pre><span class="line">                &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">34</span></pre></td><td class="code"><pre><span class="line">            ]</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">35</span></pre></td><td class="code"><pre><span class="line">          &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">36</span></pre></td><td class="code"><pre><span class="line">        &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">37</span></pre></td><td class="code"><pre><span class="line">    ]&#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">38</span></pre></td><td class="code"><pre><span class="line">  &#125;  </span></pre></td></tr><tr><td class="gutter"><pre><span class="line">39</span></pre></td><td class="code"><pre><span class="line">&#125;</span></pre></td></tr></table></figure>
+
+<p>但如此便存在一个问题,其匹配到了_dujia_的拼音，又匹配到了其中一半的字<em>家</em>，所以其能被命中返回，如下所示</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2NTU5Njg4NDI2.png" alt="badcase"> </p>
+<p>所以我们新增了一个组件用以限制查询词的长度,太短的词不应进行容错，而且在词变长就不会出现上述问题。其继承自ScriptPlugin，并且实现了自定义的打分逻辑，如果限制的查询语句超过少于限制的长度则直接返回-1分,否则根据配置返回固定的分或者ES打出的分。</p>
+<p>主要代码逻辑</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> SearchScript <span class="hljs-title">newInstance</span><span class="hljs-params">(LeafReaderContext context)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> SearchScript(p, lookup, context) &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">double</span> <span class="hljs-title">runAsDouble</span><span class="hljs-params">()</span> </span>&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-keyword">if</span>(query.length()&lt;length)&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">              <span class="hljs-keyword">return</span> -<span class="hljs-number">1</span>d;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">      &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-keyword">return</span> Integer.MIN_VALUE==constant_score?getScore():constant_score;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">            &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">      &#125;;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">&#125;</span></pre></td></tr></table></figure>
+
+
+<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// 新增语句</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-attr">"script_score"</span>: &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-attr">"script"</span>: &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-attr">"source"</span>: <span class="hljs-string">"limit_query"</span>,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-attr">"lang"</span>: <span class="hljs-string">"limit_query_length"</span>,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-attr">"params"</span>: &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">        <span class="hljs-attr">"query"</span>: <span class="hljs-string">"&#123;&#123;.Query&#125;&#125;"</span>,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">        <span class="hljs-attr">"length"</span>: <span class="hljs-string">"3"</span>,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">        <span class="hljs-attr">"constant_score"</span>: <span class="hljs-string">"1"</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line">        &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line">    &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line">&#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line">&#125;</span></pre></td></tr></table></figure>
+
+<h4 id="思考"><a href="#思考" class="headerlink" title="思考"></a>思考</h4><p>其实这里我们可以做的更多</p>
+<ul>
+<li>在lookup中我们可以拿到每个doc的_source字段</li>
+<li>在context中我们可以拿到全局的mapping,setting等信息</li>
+<li>在score中可以拿到本来的分数</li>
+</ul>
+<h3 id="SearchPlugin"><a href="#SearchPlugin" class="headerlink" title="SearchPlugin"></a>SearchPlugin</h3><h4 id="现状"><a href="#现状" class="headerlink" title="现状"></a>现状</h4><p>  我们在实现长句搜索的时候可以使用 <a href="https://www.elastic.co/guide/en/elasticsearch/reference/6.3/query-dsl-mlt-query.html" target="_blank" rel="noopener">more-like-this</a>,其原理大体就是将like的语句进行分词后然后依照BM25 选出在该字段中得分最高的n个词语，然后将原本查询的长语句变成了多个重要词的查询。</p>
+<h4 id="问题及解决-1"><a href="#问题及解决-1" class="headerlink" title="问题及解决"></a>问题及解决</h4><p>从morelike中提取出来的词相距距离太长依旧可以召回，相信熟悉Es的同学都知道ES有match_phrase的语法，其中的slop可以限制词的距离，所以我们希望能够实现一个增加词距离的morelike语句，我们称其为more_like_this_phrase，要使es能够识别我们的组件实现SearchPlugin接口，并返回build的类和解析查询的方法就可以了。</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">public class MoreLikeThisPharseSearchPlugin  extends Plugin implements SearchPlugin &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">    @Override</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">    public List&lt;QuerySpec&lt;?&gt;&gt; getQueries() &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">        return singletonList(new QuerySpec&lt;&gt;(MoreLikeThisPharseQueryBuilder.NAME, MoreLikeThisPharseQueryBuilder::new, MoreLikeThisPharseQueryBuilder::fromXContent));</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">    &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">&#125;</span></pre></td></tr></table></figure>
+<p>由于我们是基于more_like_this进行的修改，所以主要修改的解析体和创建lucene query的逻辑</p>
+<ol>
+<li><p>解析方法 MoreLikeThisPharseQueryBuilder::fromXContent</p>
+<p>加入解析slop的方法，将slop存到MoreLikeThisPharseQuery对象中</p>
+</li>
+<li><p>创建lucene查询 createQuery</p>
+<p>more_like_this_phrase 在原基础上进行了修改,从多个term query抽取出最少需要匹配到的个数（如果minishouldmatch有配置则使用minishouldmatch的个数,只需匹配任意一个即可),将所抽出的m个  数的词中任意挑选 n个词进行match_phrase+slop的查询<br>原lucene 查询结构</p>
+</li>
+</ol>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2NTU5Njg3OTQ3.png" alt="lucene查询树"> </p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>插件是解决复杂自定义打分排序逻辑的利器，后面我们会依赖插件实现更多的打分召回策略，为用户提供更好的搜索服务。</p>
+<p>[1]: <a href="https://www.elastic.co/guide/en/elasticsearch/plugins/current/index.html" target="_blank" rel="noopener">ElasticSearch Plugins and Integrations</a><br>[2]: <a href="https://www.jianshu.com/p/3373695a2b76" target="_blank" rel="noopener">Elasticsearch源码分析 Plugin组件加载</a></p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a>, <a class="has-link-grey -link" href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" rel="tag">大数据</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/08/13/FE/components-design/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">聊聊组件设计</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/07/26/FE/node-flamegraph-optimize/">
+                <span class="level-item">Node 使用火焰图优化 CPU 爆涨</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left is-sticky">
+    
+        
+
+    <div class="card widget" id="toc">
+        <div class="card-content">
+            <div class="menu">
+                <h3 class="menu-label">
+                    目录
+                </h3>
+                <ul class="menu-list"><li>
+        <a class="is-flex" href="#背景介绍">
+        <span class="has-mr-6">1</span>
+        <span>背景介绍</span>
+        </a></li><li>
+        <a class="is-flex" href="#Es插件分类">
+        <span class="has-mr-6">2</span>
+        <span>Es插件分类</span>
+        </a></li><li>
+        <a class="is-flex" href="#ES插件加载过程">
+        <span class="has-mr-6">3</span>
+        <span>ES插件加载过程</span>
+        </a></li><li>
+        <a class="is-flex" href="#Example-AnalysisPlugin">
+        <span class="has-mr-6">4</span>
+        <span>Example:AnalysisPlugin</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#IK分词类图">
+        <span class="has-mr-6">4.1</span>
+        <span>IK分词类图</span>
+        </a></li><li>
+        <a class="is-flex" href="#自定义分词器步骤">
+        <span class="has-mr-6">4.2</span>
+        <span>自定义分词器步骤</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#我们的实践">
+        <span class="has-mr-6">5</span>
+        <span>我们的实践</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#ScriptPlugin">
+        <span class="has-mr-6">5.1</span>
+        <span>ScriptPlugin</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#问题及解决">
+        <span class="has-mr-6">5.1.1</span>
+        <span>问题及解决</span>
+        </a></li><li>
+        <a class="is-flex" href="#思考">
+        <span class="has-mr-6">5.1.2</span>
+        <span>思考</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#SearchPlugin">
+        <span class="has-mr-6">5.2</span>
+        <span>SearchPlugin</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#现状">
+        <span class="has-mr-6">5.2.1</span>
+        <span>现状</span>
+        </a></li><li>
+        <a class="is-flex" href="#问题及解决-1">
+        <span class="has-mr-6">5.2.2</span>
+        <span>问题及解决</span>
+        </a></li></ul></li></ul></li><li>
+        <a class="is-flex" href="#总结">
+        <span class="has-mr-6">6</span>
+        <span>总结</span>
+        </a></li></ul>
+            </div>
+        </div>
+    </div>
+
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                标签
+            </h3>
+            <div class="field is-grouped is-grouped-multiline">
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Android/">
+                        <span class="tag">Android</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Docker/">
+                        <span class="tag">Docker</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Elasticsearch/">
+                        <span class="tag">Elasticsearch</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Java/">
+                        <span class="tag">Java</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Kubernetes/">
+                        <span class="tag">Kubernetes</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/NodeJs/">
+                        <span class="tag">NodeJs</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Yarn/">
+                        <span class="tag">Yarn</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+                        <span class="tag">八里庄技术沙龙</span>
+                        <span class="tag is-grey">4</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%89%8D%E7%AB%AF/">
+                        <span class="tag">前端</span>
+                        <span class="tag is-grey">5</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+                        <span class="tag">大数据</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">
+                        <span class="tag">并发编程</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/">
+                        <span class="tag">开源项目</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">
+                        <span class="tag">性能优化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/">
+                        <span class="tag">组件化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/">
+                        <span class="tag">计算机资源管理</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/">
+                        <span class="tag">资源调度</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered" style="flex-shrink: 1">
+                <div>
+                    
+                    <figure class="image is-128x128 has-mb-6">
+                        <img class="" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="罗辑思维技术团队">
+                    </figure>
+                    
+                    <p class="is-size-4 is-block">
+                        罗辑思维技术团队
+                    </p>
+                    
+                    
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <a href="/archives">
+                        <p class="title has-text-weight-normal">
+                            13
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <a href="/categories">
+                        <p class="title has-text-weight-normal">
+                            4
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <a href="/tags">
+                        <p class="title has-text-weight-normal">
+                            16
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/luojilab" target="_blank">
+                关注我</a>
+        </div>
+        
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/luojilab">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Website" href="https://www.igetget.com">
+                
+                <i class="fab fa-chrome"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2019/11/08/FE/grid/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTYyODQwMTc5.png" alt="Grid 布局初探">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-07T16:00:00.000Z">2019-11-08</time></div>
+                    <a href="/2019/11/08/FE/grid/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Grid 布局初探</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/11/07/Technical/ddmvvm-android/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MzQ0NjI1NDI4.png" alt="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-06T16:00:00.000Z">2019-11-07</time></div>
+                    <a href="/2019/11/07/Technical/ddmvvm-android/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/21/Technical/k8s/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTc1MjEzMzgy.png" alt="【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-20T16:00:00.000Z">2019-10-21</time></div>
+                    <a href="/2019/10/21/Technical/k8s/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/16/BigData/java-concurrent/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTIxOTYxNzc5.jpeg" alt="Java并发编程通识">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-15T16:00:00.000Z">2019-10-16</time></div>
+                    <a href="/2019/10/16/BigData/java-concurrent/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Java并发编程通识</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/09/20/Technical/process/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU2OTI1MjA0NDAx.png" alt="【八里庄技术沙龙-13 期】进度服务重构之路">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-19T16:00:00.000Z">2019-09-20</time></div>
+                    <a href="/2019/09/20/Technical/process/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-13 期】进度服务重构之路</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            链接
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="https://www.igetget.com/join" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">得到 App 校园招聘</span>
+                    </span>
+                    <span class="level-right">
+                        <span class="level-item tag">www.igetget.com</span>
+                    </span>
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+            <span class="level-start">
+                <span class="level-item">八里庄技术沙龙</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/">
+            <span class="level-start">
+                <span class="level-item">前端</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a><ul><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/NodeJs/">
+            <span class="level-start">
+                <span class="level-item">NodeJs</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li></ul></li><li>
+        <a class="level is-marginless" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+            <span class="level-start">
+                <span class="level-item">大数据</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/Android/" style="font-size: 10px;">Android</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Elasticsearch/" style="font-size: 10px;">Elasticsearch</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/NodeJs/" style="font-size: 10px;">NodeJs</a> <a href="/tags/Yarn/" style="font-size: 10px;">Yarn</a> <a href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/" style="font-size: 15px;">八里庄技术沙龙</a> <a href="/tags/%E5%89%8D%E7%AB%AF/" style="font-size: 20px;">前端</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 10px;">大数据</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" style="font-size: 10px;">并发编程</a> <a href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/" style="font-size: 10px;">开源项目</a> <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" style="font-size: 10px;">性能优化</a> <a href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/" style="font-size: 10px;">组件化</a> <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" style="font-size: 10px;">计算机资源管理</a> <a href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" style="font-size: 10px;">资源调度</a>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+        </div>
+    
+</div>
+
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen is-hidden-touch is-hidden-desktop-only has-order-3 column-right ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered" style="flex-shrink: 1">
+                <div>
+                    
+                    <figure class="image is-128x128 has-mb-6">
+                        <img class="" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="罗辑思维技术团队">
+                    </figure>
+                    
+                    <p class="is-size-4 is-block">
+                        罗辑思维技术团队
+                    </p>
+                    
+                    
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <a href="/archives">
+                        <p class="title has-text-weight-normal">
+                            13
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <a href="/categories">
+                        <p class="title has-text-weight-normal">
+                            4
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <a href="/tags">
+                        <p class="title has-text-weight-normal">
+                            16
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/luojilab" target="_blank">
+                关注我</a>
+        </div>
+        
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/luojilab">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Website" href="https://www.igetget.com">
+                
+                <i class="fab fa-chrome"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2019/11/08/FE/grid/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTYyODQwMTc5.png" alt="Grid 布局初探">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-07T16:00:00.000Z">2019-11-08</time></div>
+                    <a href="/2019/11/08/FE/grid/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Grid 布局初探</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/11/07/Technical/ddmvvm-android/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MzQ0NjI1NDI4.png" alt="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-06T16:00:00.000Z">2019-11-07</time></div>
+                    <a href="/2019/11/07/Technical/ddmvvm-android/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/21/Technical/k8s/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTc1MjEzMzgy.png" alt="【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-20T16:00:00.000Z">2019-10-21</time></div>
+                    <a href="/2019/10/21/Technical/k8s/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/16/BigData/java-concurrent/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTIxOTYxNzc5.jpeg" alt="Java并发编程通识">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-15T16:00:00.000Z">2019-10-16</time></div>
+                    <a href="/2019/10/16/BigData/java-concurrent/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Java并发编程通识</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/09/20/Technical/process/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU2OTI1MjA0NDAx.png" alt="【八里庄技术沙龙-13 期】进度服务重构之路">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-19T16:00:00.000Z">2019-09-20</time></div>
+                    <a href="/2019/09/20/Technical/process/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-13 期】进度服务重构之路</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            链接
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="https://www.igetget.com/join" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">得到 App 校园招聘</span>
+                    </span>
+                    <span class="level-right">
+                        <span class="level-item tag">www.igetget.com</span>
+                    </span>
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+            <span class="level-start">
+                <span class="level-item">八里庄技术沙龙</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/">
+            <span class="level-start">
+                <span class="level-item">前端</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a><ul><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/NodeJs/">
+            <span class="level-start">
+                <span class="level-item">NodeJs</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li></ul></li><li>
+        <a class="level is-marginless" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+            <span class="level-start">
+                <span class="level-item">大数据</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/Android/" style="font-size: 10px;">Android</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Elasticsearch/" style="font-size: 10px;">Elasticsearch</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/NodeJs/" style="font-size: 10px;">NodeJs</a> <a href="/tags/Yarn/" style="font-size: 10px;">Yarn</a> <a href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/" style="font-size: 15px;">八里庄技术沙龙</a> <a href="/tags/%E5%89%8D%E7%AB%AF/" style="font-size: 20px;">前端</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 10px;">大数据</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" style="font-size: 10px;">并发编程</a> <a href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/" style="font-size: 10px;">开源项目</a> <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" style="font-size: 10px;">性能优化</a> <a href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/" style="font-size: 10px;">组件化</a> <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" style="font-size: 10px;">计算机资源管理</a> <a href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" style="font-size: 10px;">资源调度</a>
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+    
+    
+</div>
+
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="Elasticsearch 插件详解及实践" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2019 张聪聪&nbsp;
+                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+<script>
+var IcarusThemeSettings = {
+    article: {
+        highlight: {
+            clipboard: true,
+            fold: 'unfolded'
+        }
+    }
+};
+</script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+
+
+
+    
+    
+<script src="/js/animation.js"></script>
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+<script src="/js/gallery.js" defer></script>
+
+    
+    
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+    
+    
+<!-- <a id="back-to-top" title="回到顶端" href="javascript:;"> -->
+<a id="back-to-top" title="回到顶端">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

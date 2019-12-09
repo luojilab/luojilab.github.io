@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8" />
+
+<meta name="generator" content="Hexo 4.1.0" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<title>【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践 - 罗辑思维技术博客</title>
+
+
+    <meta name="description" content="大家好，我是刘硕，来自得到安卓客户端。主要负责业务架构方向的工程效能提升相关工作。我们希望，通过对工程架构的改造升级，践行工程化方面的一些通用实践。使安卓团队在研发效率和研发体验上得到整体提升，提高app稳定性。 最近两年，我们在工程架构方面有了一些成果，主要围绕着工程架构，开发架构相关方面做了很多工作，大概分为两部分内容：组件化和mvvm开发架构。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2019&#x2F;11&#x2F;07&#x2F;Technical&#x2F;ddmvvm-android&#x2F;index.html">
+<meta property="og:site_name" content="罗辑思维技术博客">
+<meta property="og:description" content="大家好，我是刘硕，来自得到安卓客户端。主要负责业务架构方向的工程效能提升相关工作。我们希望，通过对工程架构的改造升级，践行工程化方面的一些通用实践。使安卓团队在研发效率和研发体验上得到整体提升，提高app稳定性。 最近两年，我们在工程架构方面有了一些成果，主要围绕着工程架构，开发架构相关方面做了很多工作，大概分为两部分内容：组件化和mvvm开发架构。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https:&#x2F;&#x2F;piccdn.luojilab.com&#x2F;fe-oss&#x2F;default&#x2F;MTU3MzQ0NjI1NDI4.png">
+<meta property="article:published_time" content="2019-11-06T16:00:00.000Z">
+<meta property="article:modified_time" content="2019-12-09T09:27:51.911Z">
+<meta property="article:tag" content="八里庄技术沙龙">
+<meta property="article:tag" content="Android">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https:&#x2F;&#x2F;piccdn.luojilab.com&#x2F;fe-oss&#x2F;default&#x2F;MTU3MzQ0NjI1NDI4.png">
+
+
+
+
+
+
+
+<link rel="icon" href="/images/favicon.svg">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+<style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+    
+    
+    
+    
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+    
+    
+    
+    
+    
+    
+    
+    <link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">首页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/tags">标签</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-6-widescreen has-order-2 column-main">
+<div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MzQ0NjI1NDI4.png" alt="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                
+                <div class="level-item">liushuo</div>
+                
+                <time class="level-item has-text-grey" datetime="2019-11-06T16:00:00.000Z">2019-11-07</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    27 分钟 读完 (大约 4101 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践
+            
+        </h1>
+        <div class="content">
+            <p>大家好，我是刘硕，来自得到安卓客户端。主要负责业务架构方向的工程效能提升相关工作。我们希望，通过对工程架构的改造升级，践行工程化方面的一些通用实践。使安卓团队在研发效率和研发体验上得到整体提升，提高app稳定性。</p>
+<p>最近两年，我们在工程架构方面有了一些成果，主要围绕着工程架构，开发架构相关方面做了很多工作，大概分为两部分内容：组件化和mvvm开发架构。</p>
+<a id="more"></a>
+
+<h4 id="组件化拆分"><a href="#组件化拆分" class="headerlink" title="组件化拆分"></a>组件化拆分</h4><p>组件化的概念其实理解上很简单，所谓组件化，就是把一个功能完整的app拆分成多个子模块，每个子模块可以独立编译和运行，也可以将这些子模块任意组合成一个新的app，子模块之间不互相依赖，但可以相互交互。</p>
+<h5 id="单体工程架构"><a href="#单体工程架构" class="headerlink" title="单体工程架构"></a>单体工程架构</h5><p>一般app的开发早期，团队的重心并不在开发架构的选型上。主要也是因为早期的项目比较小，大家更关注<br>多快好省的完成任务，对于如何复用，如何解耦没有过度考虑。如下图是得到早期的工程架构。</p>
+<p>随着版本迭代，app的功能越来越多，项目结构逐渐也演变成了一个庞大的单体工程，内部依赖错综复杂。</p>
+<p>当然，这会带来很多很多问题。</p>
+<p>第一、逻辑复杂，不易理解。想要熟悉掌握所有功能需要耗费大量的时间和精力，不仅如此，对于新人熟悉业务来说，也会给他们带来巨大的挑战。</p>
+<p>第二、不同的业务功能耦合严重。导致面对一个修改，我们无法界定它的影响范围，牵一发，动全身。</p>
+<p>第三、构建时间越来越长，降低了研发效率。</p>
+<p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_3087dd52ede277f8bd91fe9366be7b48.png" alt="Untitled Diagram (23).png"> </p>
+<h5 id="单体工程组件化拆分"><a href="#单体工程组件化拆分" class="headerlink" title="单体工程组件化拆分"></a>单体工程组件化拆分</h5><p>为了解决单体工程存在的这些问题，我们开始了工程的组件化改造。优先梳理各个业务模块，将不同业务模块<br>的代码和资源放到不同的业务子工程中，这些作为组件化工程中的业务组件。对于不同业务组件之间公用的代码和资源，下沉到基础子工程中，作为业务子工程的依赖。独立壳工程app，它的主要任务是负责组件的集成打包，所以尽量不要包含业务逻辑。组件化拆分如下图：</p>
+<p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_e98c87a323e87aa1e305202c87a3fc6d.png" alt="Untitled Diagram (26).png"></p>
+<h5 id="组件间通信"><a href="#组件间通信" class="headerlink" title="组件间通信"></a>组件间通信</h5><p>工程组件化拆分结束后，我们遇到的另一个问题是如何进行组件间的方法调用，因为业务组件之间是完全解耦的，所以不能简单的通过引用的方式进行调用。</p>
+<p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_d8506a2f2d326d503d3d70de223f499d.png" alt="Untitled Diagram (21).png"></p>
+<p>我们为业务组件之间通信提供了两种方式。页面路由和服务调用。从实现上来说，这两种方式都是遵循协议下沉的原则，将服务协议下沉到通信组件。</p>
+<p>app启动后，组件工程分别将自己提供的服务和页面路由注册到通信组件。如果某个组件<br>希望调用其他组件提供的服务或路由到其他组件，就可以通过查询通信组件中的注册信息，完成组件间通信的<br>任务。</p>
+<h5 id="组件单独调试运行"><a href="#组件单独调试运行" class="headerlink" title="组件单独调试运行"></a>组件单独调试运行</h5><p>如果我们集成所有组件构建项目，时间会很长，平均大概10分钟左右，为了解决这个问题。我们提出了单组件调试<br>运行的方案。</p>
+<p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_f765bb0788e2e7f8b36078850af3b63a.png" alt="Untitled Diagram (27).png"></p>
+<p>通过自定义组件构建脚本，每个业务组件都可以作为壳工程独立运行。并且可以集成其他依赖的组件并进行组件间通信。通过这种方式，编译效率得到了很大的提升，我们运行单组件工程，构建时间只需要40秒左右。</p>
+<h5 id="组件化2-0"><a href="#组件化2-0" class="headerlink" title="组件化2.0"></a>组件化2.0</h5><p>组件化用了大概一年时间，我们遇到了新的问题。大家有时希望全组件集成运行app，正如之前的解决方案，我们并没有针对这种情况的优化手段，所以就导致了每天还是浪费了很多时间在编译构建上。</p>
+<p>其实，gradle在构建项目时，确实是支持增量编译的，但有时改动一个文件，会导致项目构建时间超过10分钟。我们需要尽快解决这个问题，不然每天团队所有人在构建上浪费的总时间，我粗略的算了下  7个人<em>5次</em>10分钟，超过5个小时，还是比较吓人的。</p>
+<h5 id="全组件集成构建流程分析"><a href="#全组件集成构建流程分析" class="headerlink" title="全组件集成构建流程分析"></a>全组件集成构建流程分析</h5><p>下图简要的描述了我们集成构建app的时候需要执行的核心环节。通过分析，我们发现构建时的一些问题。每次编译项目,所有组件工程都会重新执行同样的编译构建流程，所以，如果组件集成可以直接使用aar的方式，那么这些执行的重复构建<br>就可以节省下来。编译时间上会有很大的提升</p>
+<p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_c19f37fdc74d41101463a4578f204ae5.png" alt="Untitled Diagram (33).png"></p>
+<h5 id="组件打包aar"><a href="#组件打包aar" class="headerlink" title="组件打包aar"></a>组件打包aar</h5><p>所以，顺着前面的思路，我们构建了一套完整的组件打包体系。</p>
+<p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_16304fe99e16eee44a9ea846855bb2f7.png" alt="Untitled Diagram (38).png"></p>
+<p>ci 负责实时监控git仓库代码变动,当开发人员提交了代码，CI 自动开始执行组件打包脚本。打包脚本会分析出所有包含代码变动的组件，并计算出组件对应的版本和maven仓库信息。使用这些信息，执行每个组件的gradle打包任务，并将打包成功后的产出物 aar 上传到组件仓库。</p>
+<h5 id="组件化2-0集成构建"><a href="#组件化2-0集成构建" class="headerlink" title="组件化2.0集成构建"></a>组件化2.0集成构建</h5><p>组件有了aar的管理方式，我们的全组件集成构建逻辑就可以进一步得到升级。</p>
+<p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_d616f84d06a018d87976dd1aacba49f5.png" alt="Untitled Diagram (36).png"></p>
+<p>执行全组件集成构建时，首先解析工程下的组件化配置文件。该配置文件中明确标明了某个组件的依赖方式是aar还是源码，及aar的依赖版本和仓库信息。然后构建脚本就会根据这些信息，灵活的配置组件依赖并集成构建app。</p>
+<p>使用aar的集成方式，避免了组件的再次编译，全量编译时间从之前的10分钟降低为现在的2分半左右</p>
+<h4 id="MVVM-开发架构"><a href="#MVVM-开发架构" class="headerlink" title="MVVM 开发架构"></a>MVVM 开发架构</h4><p>这部分，主要包含一些我们在选型开发架构上的心得和实践。如下图描述，工程组件化架构搭建完成后，我们的编译效率和项目管理方式得到了很大的改进。</p>
+<p>但是，组件内的业务开发还在采用比较粗放的模式。Controller作为业务功能组织的核心，完成了大概80%的工作量，内部耦合十分严重，极大的限制了代码的复用能力，导致研发效率底下。</p>
+<p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_500734ffdd71d031dfa89c4025f85953.png" alt="Untitled Diagram (49).png"></p>
+<h5 id="MVC-VS-MVP"><a href="#MVC-VS-MVP" class="headerlink" title="MVC VS MVP"></a>MVC VS MVP</h5><p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_83b0b621659d7633d42742eb8176d09f.png" alt="Untitled Diagram (83).png"></p>
+<p>为了解决目前以Controller为核心的开发模式带来的代码复用问题,我们对比了常见的三种MVX 架构。</p>
+<p>其中，MVC 是开发gui应用程序的经典架构。但是，由于Controller直接持有了View的引用并使用这些引用组织展现逻辑，导致展现逻辑不能很好的被复用。</p>
+<p>MVP的出现很好的 解决了MVC中展现逻辑不易复用的问题。MVP中展现交互逻辑完全由Presenter负责，并通过View接口与View通信。</p>
+<p>但是MVP也存在一些问题。展现逻辑的复用粒度由View接口的力度决定，而且，当展现逻辑非常复杂，<br>就会造成Presenter与View联系过于紧密，限制了复用能力。</p>
+<h5 id="MVP-VS-MVVM"><a href="#MVP-VS-MVVM" class="headerlink" title="MVP VS MVVM"></a>MVP VS MVVM</h5><p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_bc0b779af1c6bc2aee13b3bfbac19920.png" alt="Untitled Diagram (54).png"></p>
+<p>相对于MVP，MVVM中展现逻辑的复用更为彻底。<br>MVVM 中创新的提出了抽象View的概念 ViewModel，ViewModel封装了View的一切状态和行为，但与具体的显示框架，布局规则没有任何关系。</p>
+<p>这就使得ViewModel可以满足几乎任何场景下的被复用需求。基于传统的MVVM概念和google 推出的AAC 架构组件，我们开发了一套更符合自己实际情况的MVVM方案.</p>
+<p>下面开始详细的介绍我们的MVVM 实践。</p>
+<h5 id="MVVM-中的依赖原则"><a href="#MVVM-中的依赖原则" class="headerlink" title="MVVM 中的依赖原则"></a>MVVM 中的依赖原则</h5><p>MVVM 遵循单向依赖原则，依赖关系从上向下 依次为 View 依赖 ViewModel,ViewModel依赖 Model，不允许跨层依赖。这样的好处是可以使调用依赖关系更加清晰。</p>
+<p>沿着依赖方向的通信方式以直接方法调用为主。由于不能违背依赖原则，从下向上的通信主要借助观察者模式实现，上层注册观察者，下层需要通信时，触发观察者回调。</p>
+<p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_908f888db681263a44229d3f899f1fe1.png" alt="Untitled Diagram (57).png"></p>
+<h5 id="MVVM-中的类层次"><a href="#MVVM-中的类层次" class="headerlink" title="MVVM 中的类层次"></a>MVVM 中的类层次</h5><p>如下图，MVVM 中View ViewModel Model 都有自己的类层次结构。</p>
+<p>其中，View 需要 承载 布局渲染等逻辑，所以Activity， Fragment，ViewHolder 及其子类属于View的角色范畴。</p>
+<p>ViewModel作为View的抽象表示，分别针对页面和列表item提供了不同的子类实现。</p>
+<p>Model中BaseModel类主要封装了网络库相关的方法调用，具体子类可以根据不同场景，实现不同的需求。</p>
+<p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_5e0f7c3e0e36df4358644bbf3e9977cd.png" alt="Untitled Diagram (81).png"></p>
+<h5 id="MVVM-在首页的实践"><a href="#MVVM-在首页的实践" class="headerlink" title="MVVM 在首页的实践"></a>MVVM 在首页的实践</h5><p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_f61fa909899fbfa3a6f4efdafb5c8d3f.png" alt="Untitled Diagram (82).png"></p>
+<p>首页算是得到app中比较特殊的页面。最外层结构是一个列表，列表中每个item 独立请求需要显示的业务数据。</p>
+<p>我们在使用mvvm架构整个页面的过程中，确实遇到了一些问题。<br>这些问题，大概包含了三个方面的内容。</p>
+<p>问题1：如何复用逻辑<br>面向对象开发中，复用的主要手段包括组合还有继承</p>
+<p>那么，mvvm中，展现逻辑和数据逻辑的复用，也不外乎这两种手段。</p>
+<p>例如，得到app 首页中 推荐课程，推荐听书都包含 负反馈和底部推荐标签功能，我们将这两个功能抽象到TagsItemVM 中，课程，听书VM分别继承TagsItemVM，这样就可以非常容易的实现这两个展现交互逻辑的复用。</p>
+<p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_4aea96b8fbf0c310c141478c81bbf034.png" alt="Untitled Diagram (86).png"></p>
+<p>问题2：ViewModel如何感知View的生命周期变化</p>
+<p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_fce79cfa2bb995e19bc87177755d7170.png" alt="Untitled Diagram (95).png"></p>
+<p>在mvvm中，View直接持有ViewModel的引用，所以，当View的生命周期发生变化，ViewModel对应的生命周期函数会立即被调用。通过这种方式，我们确保ViewModel与View的<br>生命周期能够保持同步</p>
+<p>但由于页面Activity，Fragment和列表ItemViewHolder具有不同的生命周期形式，所以他们对应的ViewModel会有不同的生命周期回调。</p>
+<p>ViewModel内部使用一个对象维护自身的生命周期状态，当ViewModel与View绑定后，ViewModel的生命周期 活跃，当ViewModel与View解除绑定后，ViewModel的生命周期不活跃。</p>
+<p>此外，ViewModel生命周期的活跃状态受其parent ViewModel的生命周期影响，当parent ViewModel 不活跃，当前ViewModel的生命周期同样已经不活跃。</p>
+<p>通过感知ViewModel生命周期的活跃状态,在生命周期不活跃时，执行某些资源的清理操作，可以有效防止内存泄露。</p>
+<p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_8a5dad97b4785a5b386659f6c81ed694.png" alt="Untitled Diagram (75).png">code block</p>
+<p>问题3：ViewModel之间如何互相通信</p>
+<p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_ed373b1658fa4ff4ba9c914acfa5c5fc.png" alt="Untitled Diagram (61).png"></p>
+<p>ViewModel之间通信主要依赖于LifecycleBus，这是一种特殊的事件总线。</p>
+<p>ViewModel不活跃时，由于会断开与总线的链接，所以不会收到总线上的事件。</p>
+<p>这样的设计主要考虑到 viewmodel 已经不在与View有绑定关系，ViewModel继续关注View中的事件通知是没有意义的，还可能带来其他未知的问题。</p>
+<p>这中方案还带来了另外的好处，使event的派发效率更好，因为事件只会派发到活跃的ViewModel</p>
+<h5 id="消除模板代码，简化开发"><a href="#消除模板代码，简化开发" class="headerlink" title="消除模板代码，简化开发"></a>消除模板代码，简化开发</h5><p><img src="https://luoji-img.oss-cn-beijing.aliyuncs.com/fe/blog/20191110/upload_735be772fe5abd4942e14d8d813f5c9e.png" alt="Untitled Diagram (78).png"></p>
+<p>如上图，传统的MVVM实现中，如果我们希望实现一个列表效果，至少需要新创建四个文件，view adapter，item view hodler，item view model，layout file。但是，view adapter和view holder中主要是一些模板代码，几乎没有有效的业务逻辑。</p>
+<p>所以，我们为了解决这个问题，在MVVM framework中提供三个基础设施类，通用的view adapter，通用的view holder，bindItemVH注解。</p>
+<p>这样，我们再实现同样的列表效果，只需要创建两个文件 item view model和layout file。</p>
+<p>然后使用注解关联这两个文件。运行时，通用的view adapter 根据注解指定的关联关系，就可以将相关的ui渲染到屏幕上。</p>
+<h5 id="我们的收获"><a href="#我们的收获" class="headerlink" title="我们的收获"></a>我们的收获</h5><p>目前我们已经上线首页，已购的mvvm改造，消息中心，问答，搜索，课程的mvvm方案也已经完成。</p>
+<p>通过mvvm开发架构的升级，我们的程序结构更加清晰，代码可读性更高，通过运行时注解的支持，彻底消除了不必要的模板代码,使我们的开发更加顺畅。</p>
+<h4 id="未来规划"><a href="#未来规划" class="headerlink" title="未来规划"></a>未来规划</h4><p>未来，我们想尝试的方向有组件平台化，插件化，跨平台，希望通过这些手段，进一步提升团队协作效能，提高app研发效率，和用户体验</p>
+<p>以上就是我们最近两年在工程架构上的努力，谢谢大家</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Android/" rel="tag">Android</a>, <a class="has-link-grey -link" href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/" rel="tag">八里庄技术沙龙</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/11/08/FE/grid/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Grid 布局初探</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/10/21/Technical/k8s/">
+                <span class="level-item">【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left is-sticky">
+    
+        
+
+    <div class="card widget" id="toc">
+        <div class="card-content">
+            <div class="menu">
+                <h3 class="menu-label">
+                    目录
+                </h3>
+                <ul class="menu-list"><li>
+        <a class="is-flex" href="#组件化拆分">
+        <span class="has-mr-6">1</span>
+        <span>组件化拆分</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#单体工程架构">
+        <span class="has-mr-6">1.1</span>
+        <span>单体工程架构</span>
+        </a></li><li>
+        <a class="is-flex" href="#单体工程组件化拆分">
+        <span class="has-mr-6">1.2</span>
+        <span>单体工程组件化拆分</span>
+        </a></li><li>
+        <a class="is-flex" href="#组件间通信">
+        <span class="has-mr-6">1.3</span>
+        <span>组件间通信</span>
+        </a></li><li>
+        <a class="is-flex" href="#组件单独调试运行">
+        <span class="has-mr-6">1.4</span>
+        <span>组件单独调试运行</span>
+        </a></li><li>
+        <a class="is-flex" href="#组件化2-0">
+        <span class="has-mr-6">1.5</span>
+        <span>组件化2.0</span>
+        </a></li><li>
+        <a class="is-flex" href="#全组件集成构建流程分析">
+        <span class="has-mr-6">1.6</span>
+        <span>全组件集成构建流程分析</span>
+        </a></li><li>
+        <a class="is-flex" href="#组件打包aar">
+        <span class="has-mr-6">1.7</span>
+        <span>组件打包aar</span>
+        </a></li><li>
+        <a class="is-flex" href="#组件化2-0集成构建">
+        <span class="has-mr-6">1.8</span>
+        <span>组件化2.0集成构建</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#MVVM-开发架构">
+        <span class="has-mr-6">2</span>
+        <span>MVVM 开发架构</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#MVC-VS-MVP">
+        <span class="has-mr-6">2.1</span>
+        <span>MVC VS MVP</span>
+        </a></li><li>
+        <a class="is-flex" href="#MVP-VS-MVVM">
+        <span class="has-mr-6">2.2</span>
+        <span>MVP VS MVVM</span>
+        </a></li><li>
+        <a class="is-flex" href="#MVVM-中的依赖原则">
+        <span class="has-mr-6">2.3</span>
+        <span>MVVM 中的依赖原则</span>
+        </a></li><li>
+        <a class="is-flex" href="#MVVM-中的类层次">
+        <span class="has-mr-6">2.4</span>
+        <span>MVVM 中的类层次</span>
+        </a></li><li>
+        <a class="is-flex" href="#MVVM-在首页的实践">
+        <span class="has-mr-6">2.5</span>
+        <span>MVVM 在首页的实践</span>
+        </a></li><li>
+        <a class="is-flex" href="#消除模板代码，简化开发">
+        <span class="has-mr-6">2.6</span>
+        <span>消除模板代码，简化开发</span>
+        </a></li><li>
+        <a class="is-flex" href="#我们的收获">
+        <span class="has-mr-6">2.7</span>
+        <span>我们的收获</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#未来规划">
+        <span class="has-mr-6">3</span>
+        <span>未来规划</span>
+        </a></li></ul>
+            </div>
+        </div>
+    </div>
+
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                标签
+            </h3>
+            <div class="field is-grouped is-grouped-multiline">
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Android/">
+                        <span class="tag">Android</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Docker/">
+                        <span class="tag">Docker</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Elasticsearch/">
+                        <span class="tag">Elasticsearch</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Java/">
+                        <span class="tag">Java</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Kubernetes/">
+                        <span class="tag">Kubernetes</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/NodeJs/">
+                        <span class="tag">NodeJs</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Yarn/">
+                        <span class="tag">Yarn</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+                        <span class="tag">八里庄技术沙龙</span>
+                        <span class="tag is-grey">4</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%89%8D%E7%AB%AF/">
+                        <span class="tag">前端</span>
+                        <span class="tag is-grey">5</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+                        <span class="tag">大数据</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">
+                        <span class="tag">并发编程</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/">
+                        <span class="tag">开源项目</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">
+                        <span class="tag">性能优化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/">
+                        <span class="tag">组件化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/">
+                        <span class="tag">计算机资源管理</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/">
+                        <span class="tag">资源调度</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered" style="flex-shrink: 1">
+                <div>
+                    
+                    <figure class="image is-128x128 has-mb-6">
+                        <img class="" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="罗辑思维技术团队">
+                    </figure>
+                    
+                    <p class="is-size-4 is-block">
+                        罗辑思维技术团队
+                    </p>
+                    
+                    
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <a href="/archives">
+                        <p class="title has-text-weight-normal">
+                            13
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <a href="/categories">
+                        <p class="title has-text-weight-normal">
+                            4
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <a href="/tags">
+                        <p class="title has-text-weight-normal">
+                            16
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/luojilab" target="_blank">
+                关注我</a>
+        </div>
+        
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/luojilab">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Website" href="https://www.igetget.com">
+                
+                <i class="fab fa-chrome"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2019/11/08/FE/grid/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTYyODQwMTc5.png" alt="Grid 布局初探">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-07T16:00:00.000Z">2019-11-08</time></div>
+                    <a href="/2019/11/08/FE/grid/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Grid 布局初探</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/11/07/Technical/ddmvvm-android/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MzQ0NjI1NDI4.png" alt="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-06T16:00:00.000Z">2019-11-07</time></div>
+                    <a href="/2019/11/07/Technical/ddmvvm-android/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/21/Technical/k8s/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTc1MjEzMzgy.png" alt="【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-20T16:00:00.000Z">2019-10-21</time></div>
+                    <a href="/2019/10/21/Technical/k8s/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/16/BigData/java-concurrent/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTIxOTYxNzc5.jpeg" alt="Java并发编程通识">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-15T16:00:00.000Z">2019-10-16</time></div>
+                    <a href="/2019/10/16/BigData/java-concurrent/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Java并发编程通识</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/09/20/Technical/process/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU2OTI1MjA0NDAx.png" alt="【八里庄技术沙龙-13 期】进度服务重构之路">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-19T16:00:00.000Z">2019-09-20</time></div>
+                    <a href="/2019/09/20/Technical/process/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-13 期】进度服务重构之路</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            链接
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="https://www.igetget.com/join" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">得到 App 校园招聘</span>
+                    </span>
+                    <span class="level-right">
+                        <span class="level-item tag">www.igetget.com</span>
+                    </span>
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+            <span class="level-start">
+                <span class="level-item">八里庄技术沙龙</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/">
+            <span class="level-start">
+                <span class="level-item">前端</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a><ul><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/NodeJs/">
+            <span class="level-start">
+                <span class="level-item">NodeJs</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li></ul></li><li>
+        <a class="level is-marginless" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+            <span class="level-start">
+                <span class="level-item">大数据</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/Android/" style="font-size: 10px;">Android</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Elasticsearch/" style="font-size: 10px;">Elasticsearch</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/NodeJs/" style="font-size: 10px;">NodeJs</a> <a href="/tags/Yarn/" style="font-size: 10px;">Yarn</a> <a href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/" style="font-size: 15px;">八里庄技术沙龙</a> <a href="/tags/%E5%89%8D%E7%AB%AF/" style="font-size: 20px;">前端</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 10px;">大数据</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" style="font-size: 10px;">并发编程</a> <a href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/" style="font-size: 10px;">开源项目</a> <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" style="font-size: 10px;">性能优化</a> <a href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/" style="font-size: 10px;">组件化</a> <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" style="font-size: 10px;">计算机资源管理</a> <a href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" style="font-size: 10px;">资源调度</a>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+        </div>
+    
+</div>
+
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen is-hidden-touch is-hidden-desktop-only has-order-3 column-right ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered" style="flex-shrink: 1">
+                <div>
+                    
+                    <figure class="image is-128x128 has-mb-6">
+                        <img class="" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="罗辑思维技术团队">
+                    </figure>
+                    
+                    <p class="is-size-4 is-block">
+                        罗辑思维技术团队
+                    </p>
+                    
+                    
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <a href="/archives">
+                        <p class="title has-text-weight-normal">
+                            13
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <a href="/categories">
+                        <p class="title has-text-weight-normal">
+                            4
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <a href="/tags">
+                        <p class="title has-text-weight-normal">
+                            16
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/luojilab" target="_blank">
+                关注我</a>
+        </div>
+        
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/luojilab">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Website" href="https://www.igetget.com">
+                
+                <i class="fab fa-chrome"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2019/11/08/FE/grid/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTYyODQwMTc5.png" alt="Grid 布局初探">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-07T16:00:00.000Z">2019-11-08</time></div>
+                    <a href="/2019/11/08/FE/grid/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Grid 布局初探</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/11/07/Technical/ddmvvm-android/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MzQ0NjI1NDI4.png" alt="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-06T16:00:00.000Z">2019-11-07</time></div>
+                    <a href="/2019/11/07/Technical/ddmvvm-android/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/21/Technical/k8s/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTc1MjEzMzgy.png" alt="【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-20T16:00:00.000Z">2019-10-21</time></div>
+                    <a href="/2019/10/21/Technical/k8s/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/16/BigData/java-concurrent/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTIxOTYxNzc5.jpeg" alt="Java并发编程通识">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-15T16:00:00.000Z">2019-10-16</time></div>
+                    <a href="/2019/10/16/BigData/java-concurrent/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Java并发编程通识</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/09/20/Technical/process/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU2OTI1MjA0NDAx.png" alt="【八里庄技术沙龙-13 期】进度服务重构之路">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-19T16:00:00.000Z">2019-09-20</time></div>
+                    <a href="/2019/09/20/Technical/process/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-13 期】进度服务重构之路</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            链接
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="https://www.igetget.com/join" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">得到 App 校园招聘</span>
+                    </span>
+                    <span class="level-right">
+                        <span class="level-item tag">www.igetget.com</span>
+                    </span>
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+            <span class="level-start">
+                <span class="level-item">八里庄技术沙龙</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/">
+            <span class="level-start">
+                <span class="level-item">前端</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a><ul><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/NodeJs/">
+            <span class="level-start">
+                <span class="level-item">NodeJs</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li></ul></li><li>
+        <a class="level is-marginless" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+            <span class="level-start">
+                <span class="level-item">大数据</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/Android/" style="font-size: 10px;">Android</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Elasticsearch/" style="font-size: 10px;">Elasticsearch</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/NodeJs/" style="font-size: 10px;">NodeJs</a> <a href="/tags/Yarn/" style="font-size: 10px;">Yarn</a> <a href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/" style="font-size: 15px;">八里庄技术沙龙</a> <a href="/tags/%E5%89%8D%E7%AB%AF/" style="font-size: 20px;">前端</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 10px;">大数据</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" style="font-size: 10px;">并发编程</a> <a href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/" style="font-size: 10px;">开源项目</a> <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" style="font-size: 10px;">性能优化</a> <a href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/" style="font-size: 10px;">组件化</a> <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" style="font-size: 10px;">计算机资源管理</a> <a href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" style="font-size: 10px;">资源调度</a>
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+    
+    
+</div>
+
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2019 liushuo&nbsp;
+                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+<script>
+var IcarusThemeSettings = {
+    article: {
+        highlight: {
+            clipboard: true,
+            fold: 'unfolded'
+        }
+    }
+};
+</script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+
+
+
+    
+    
+<script src="/js/animation.js"></script>
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+<script src="/js/gallery.js" defer></script>
+
+    
+    
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+    
+    
+<!-- <a id="back-to-top" title="回到顶端" href="javascript:;"> -->
+<a id="back-to-top" title="回到顶端">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>
