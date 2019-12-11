@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html  lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+
+<meta name="generator" content="Hexo 4.1.0" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<title>Yarn 资源隔离与访问控制指北 - 罗辑思维技术博客</title>
+
+
+    <meta name="description" content="你还在为可爱的小朋友向基于Yarn进行资源调度的大数据集群提交巨牛无比的笛卡尔积任务而苦恼吗？   你还在为不知道如何让可爱的小朋友乖乖地在正确的资源调度队列里排队而惆怅吗？   本文将为你简要分享我罗是如何从粗放式资源调度的蛮荒阶段，过渡到现如今在Hive+Sentry+Hue的使用环境下，通过Cloudera Manager提供的公平调度器、动态资源池和Linux cgroups实现队列资源隔">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Yarn 资源隔离与访问控制指北">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2019&#x2F;08&#x2F;27&#x2F;big-data&#x2F;tutorial-cm-yarn-hive-sentry-hue&#x2F;index.html">
+<meta property="og:site_name" content="罗辑思维技术博客">
+<meta property="og:description" content="你还在为可爱的小朋友向基于Yarn进行资源调度的大数据集群提交巨牛无比的笛卡尔积任务而苦恼吗？   你还在为不知道如何让可爱的小朋友乖乖地在正确的资源调度队列里排队而惆怅吗？   本文将为你简要分享我罗是如何从粗放式资源调度的蛮荒阶段，过渡到现如今在Hive+Sentry+Hue的使用环境下，通过Cloudera Manager提供的公平调度器、动态资源池和Linux cgroups实现队列资源隔">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https:&#x2F;&#x2F;piccdn.luojilab.com&#x2F;fe-oss&#x2F;default&#x2F;yarn-logo1.png">
+<meta property="article:published_time" content="2019-08-26T16:00:00.000Z">
+<meta property="article:modified_time" content="2019-12-09T09:27:51.899Z">
+<meta property="article:tag" content="Yarn">
+<meta property="article:tag" content="资源调度">
+<meta property="article:tag" content="计算机资源管理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https:&#x2F;&#x2F;piccdn.luojilab.com&#x2F;fe-oss&#x2F;default&#x2F;yarn-logo1.png">
+
+
+
+
+
+
+
+<link rel="icon" href="/images/favicon.svg">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+<style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+    
+    
+    
+    
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+    
+    
+    
+    
+    
+    
+    
+    <link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="Yarn 资源隔离与访问控制指北" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">首页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/tags">标签</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-6-widescreen has-order-2 column-main">
+<div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/yarn-logo1.png" alt="Yarn 资源隔离与访问控制指北">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                
+                <div class="level-item">yaokuan</div>
+                
+                <time class="level-item has-text-grey" datetime="2019-08-26T16:00:00.000Z">2019-08-27</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    23 分钟 读完 (大约 3489 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Yarn 资源隔离与访问控制指北
+            
+        </h1>
+        <div class="content">
+            <p>你还在为可爱的小朋友向基于Yarn进行资源调度的大数据集群提交巨牛无比的笛卡尔积任务而苦恼吗？  </p>
+<p>你还在为不知道如何让可爱的小朋友乖乖地在正确的资源调度队列里排队而惆怅吗？  </p>
+<p>本文将为你简要分享我罗是如何从粗放式资源调度的蛮荒阶段，过渡到现如今在Hive+Sentry+Hue的使用环境下，通过Cloudera Manager提供的公平调度器、动态资源池和Linux cgroups实现队列资源隔离、队列资源可伸缩、队列访问控制的精确治理阶段。  </p>
+<a id="more"></a>
+
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><h3 id="目的"><a href="#目的" class="headerlink" title="目的"></a>目的</h3><ul>
+<li>协调计算资源，实现队列资源隔离、队列资源可伸缩：保障azkaban调度用户绝对有资源可用的同时，满足其他用户即席查询的需求</li>
+<li>结合Sentry和Linux cgroups，实现队列的访问控制</li>
+</ul>
+<h3 id="基本需求"><a href="#基本需求" class="headerlink" title="基本需求"></a>基本需求</h3><p><strong>用户组及权值分配说明</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">分组</th>
+<th>说明</th>
+<th>权值</th>
+<th>成员</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">supergroup</td>
+<td>azkaban调度用户；<br>通过Hive Gateway提交任务</td>
+<td>80</td>
+<td>hdfs, dwadmin, datadev</td>
+</tr>
+<tr>
+<td align="left">hive-admin</td>
+<td>Hive+Sentry 认证用户, 分组与Sentry一致；<br>一般通过Hue等工具提交任务</td>
+<td>12</td>
+<td>我罗大数据中心成员</td>
+</tr>
+<tr>
+<td align="left">hive-read</td>
+<td>一般通过Hue等工具提交任务</td>
+<td>8</td>
+<td>我罗大数据中心之外的成员</td>
+</tr>
+<tr>
+<td align="left">Sentry未授权用户</td>
+<td>被Sentry拦截</td>
+<td>—</td>
+<td>UNDEFINED</td>
+</tr>
+</tbody></table>
+<p><strong>队列（资源池）访问控制</strong></p>
+<table>
+<thead>
+<tr>
+<th>队列（资源池）</th>
+<th>可提交组</th>
+<th>管理组</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>supergroup</td>
+<td>supergroup</td>
+<td>supergroup</td>
+</tr>
+<tr>
+<td>hive-admin</td>
+<td>hive-admin</td>
+<td>hive-admin，supergroup</td>
+</tr>
+<tr>
+<td>hive-read</td>
+<td>*</td>
+<td>hive-admin，supergroup</td>
+</tr>
+</tbody></table>
+<h3 id="队列配置"><a href="#队列配置" class="headerlink" title="队列配置"></a>队列配置</h3><p>由需求可以梳理出Yarn资源调度队列配置：</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODYzMDU0Mjk2.png" alt="队列配置示意图"></p>
+<h2 id="公平调度器"><a href="#公平调度器" class="headerlink" title="公平调度器"></a>公平调度器</h2><p>Cloudera Manager 推荐使用该调度器，且对该调度器的支持力度最大，可以配合动态资源池和Sentry灵活地按照队列放置规则，将特定用户提交的任务放置到特定的队列中，并通过ACL严格限制队列的访问。</p>
+<h3 id="配置详解"><a href="#配置详解" class="headerlink" title="配置详解"></a>配置详解</h3><p><strong>Overview</strong></p>
+<p>为了便于管理用户提交的任务，因此将用户分组，提交任务时按分组提交到对应的队列中。具体规则如下：</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODYzMDY3MjIx.png" alt="组提交队列规则"></p>
+<p><strong>yarn-site.xml</strong></p>
+<p>在 <strong>Cloudera Manager -&gt; 集群 -&gt; Yarn -&gt; 配置</strong> 中直接搜索配置项</p>
+<figure class="highlight properties hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment"># 禁止未声明的资源池</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">yarn.scheduler.fair.allow-undeclared-pools</span> = <span class="hljs-string">false</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment"># 禁止公平调度器抢占</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">yarn.scheduler.fair.preemption</span> = <span class="hljs-string">false</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment"># 禁止以用户名作为默认队列</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">yarn.scheduler.fair.user-as-default-queue</span> = <span class="hljs-string">false</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment"># 禁用，以使队列内部分配资源的时候，采用轮询方式公平地为每个应用分配资源。若设为true，则可以设置权重，权重越大，分配的资源越多</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">yarn.scheduler.fair.sizebasedweight</span> = <span class="hljs-string">false</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment"># 开启Yarn的ACL</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">yarn.acl.enable</span>=<span class="hljs-string">true</span></span></pre></td></tr></table></figure>
+
+<p><strong>资源池</strong></p>
+<p>路径：<strong>集群 -&gt; 动态资源池 -&gt; Yarn -&gt; 资源池</strong></p>
+<p><strong>Overview</strong></p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODYzMDc4NjM2.png" alt="资源配置总览"></p>
+<p><strong>配置说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>配置</th>
+<th>描述</th>
+<th align="center">默认值</th>
+<th>设置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>权</td>
+<td>队列之间按权值分配资源</td>
+<td align="center">—</td>
+<td>如上图</td>
+</tr>
+<tr>
+<td>最大/小资源数</td>
+<td>该配置会覆盖<strong>权</strong>，即该配置优先级高于<strong>按权分配的最大值限制</strong>；<br>这里只加入最大资源数限制，保证某个队列不会占用过多的资源。</td>
+<td align="center">—</td>
+<td>如上图</td>
+</tr>
+<tr>
+<td>计划策略</td>
+<td>CM推荐使用DRF，按照CPU和内存分配资源</td>
+<td align="center">DRF</td>
+<td>ALL: DRF</td>
+</tr>
+<tr>
+<td>Application Master<br>最大份额</td>
+<td>限制可用于运行 ApplicationMaster 的资源池公平份额的比例。<br>例如，如果设为 1.0，叶池中的 ApplicationMaster 最多可使用 100% 的内存和 CPU 公平份额；<br>如果值为 -1.0，将禁用 ApplicationMaster 份额的监控。</td>
+<td align="center">0.5</td>
+<td>ALL:-1.0</td>
+</tr>
+</tbody></table>
+<p><strong>ACL</strong></p>
+<p>root.supergroup:</p>
+<ul>
+<li><strong>提交访问控制</strong>  组：supergroup，用户：datadev,dwadmin,hdfs</li>
+<li><strong>管理访问控制</strong>  组：supergroup，用户：datadev,dwadmin,hdfs</li>
+</ul>
+<p>root.hive-admin:</p>
+<ul>
+<li><strong>提交访问控制</strong>  组：hive-admin</li>
+<li><strong>管理访问控制</strong>  组：hive-admin</li>
+</ul>
+<p>root.hive-read:</p>
+<ul>
+<li><strong>提交访问控制</strong>  用户：* （允许任何用户向该池提交）</li>
+<li><strong>管理访问控制</strong>  组：hive-admin</li>
+</ul>
+<h4 id="放置规则"><a href="#放置规则" class="headerlink" title="放置规则"></a>放置规则</h4><p>路径：<strong>集群 -&gt; 动态资源池 -&gt; Yarn -&gt; 放置规则</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">规则匹配顺序</th>
+<th align="left">放置规则</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">1</td>
+<td align="left">仅当池 已在运行时指定 存在时使用该池。</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">使用池 root.[secondary group]。</td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td align="left">仅当池 root.[primary group] 存在时使用该池。</td>
+</tr>
+<tr>
+<td align="left">4</td>
+<td align="left">使用池 root.hive-read。 此规则始终满足。不会使用后续规则。</td>
+</tr>
+</tbody></table>
+<p>在配置 规则1 和 规则3 时，<strong>不要</strong>勾选：</p>
+<ul>
+<li><input disabled type="checkbox"> 在池不存在时创建池。</li>
+</ul>
+<p><strong>规则说明</strong></p>
+<ul>
+<li><p>规则1：保证了在Hive+Sentry的环境下，CM能够根据用户及其分组，将用户提交的任务匹配到指定的队列中。</p>
+</li>
+<li><p>规则2：azkaban调度用户通过在Hive Gateway上通过<code>hive -e &quot;&lt;HQL&gt;&quot;</code>等方式提交任务。因此，需要在Hive Gateway所在的主机中，<strong>添加用户 hdfs, dwadmin, datadev</strong>，并为这三个用户都加上<strong>secondary group[^1]：supergroup</strong>(usermod -G supergroup &lt;user&gt;)</p>
+</li>
+<li><p>规则3：Hive + Sentry 认证用户(Hue用户等)，与Sentry Server上对用户的主分组一致。hive-admin分组被分配到root.hive-admin队列，hive-read分组被分配到root.hive-read队列</p>
+</li>
+<li><p>规则4：兜底，如果上面的规则都未满足，任务将被放置到权值低的hive-read队列</p>
+</li>
+</ul>
+<p><strong>禁止Hive用户自行制定队列</strong></p>
+<p>Hive启用Sentry后禁用了用户模拟功能，导致所有作业均以hive用户提交，为了防止用户提交作业到其它资源池，需要禁用hive的mapreduce.job.queue.name(mapred.job.queue.name)</p>
+<ul>
+<li>在CM Hive配置中搜索 hive-site.xml</li>
+<li>追加或修改：<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">         <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>hive.conf.restricted.list<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">         <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>mapred.job.queue.name,mapreduce.job.queue.name<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">  ```  </span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">  </span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">### 运维手册</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">**窗口期**</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line">下午8点之后有调度，因此尽量在下午8点之前；暂定下午7-8点进行离线集群Yarn的维护。其中不涉及重启的部分不影响正常使用，因此可以先行修改如下配置，之后发公告留出一个小时的窗口期用于重启和验证。</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line">**[18:30] 发布公告**</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">15</span></pre></td><td class="code"><pre><span class="line">声明将于19点-20点进行Yarn的维护，届时Hive、Hue、Impala将不可用，Presto可正常使用</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">16</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">17</span></pre></td><td class="code"><pre><span class="line">**添加用户组**</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">18</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">19</span></pre></td><td class="code"><pre><span class="line">azkaban调度用户</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">20</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">21</span></pre></td><td class="code"><pre><span class="line">```shell</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">22</span></pre></td><td class="code"><pre><span class="line"># login root@master1.cal.bgd.mjq.luojilab.com, 分发命令到Hive Gateway角色</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">23</span></pre></td><td class="code"><pre><span class="line">sh ~/send_command.sh "groupadd supergroup"</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">24</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">25</span></pre></td><td class="code"><pre><span class="line">sh ~/send_command.sh "useradd hdfs"</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">26</span></pre></td><td class="code"><pre><span class="line">sh ~/send_command.sh "useradd dwadmin"</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">27</span></pre></td><td class="code"><pre><span class="line">sh ~/send_command.sh "useradd datadev"</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">28</span></pre></td><td class="code"><pre><span class="line"># 添加azkaban调度用户secondary group</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">29</span></pre></td><td class="code"><pre><span class="line">sh ~/send_command.sh "usermod -G supergroup hdfs"</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">30</span></pre></td><td class="code"><pre><span class="line">sh ~/send_command.sh "usermod -G supergroup dwadmin"</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">31</span></pre></td><td class="code"><pre><span class="line">sh ~/send_commasupergrouph "usermod -G supergroup datadev"</span></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>Hive + Sentry 认证用户</p>
+<ol>
+<li>在对用户改动之前，先在Hue中完成对用户及其组的 新增/修改/删除</li>
+<li>登录到Hive Server2：</li>
+</ol>
+<figure class="highlight shell hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash"> login root@mg03.cal.bgd.mjq.luojilab.com, 在Hive Server2角色中调整Hive+Sentry用户和组</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">cd /root/sentry/</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash"> sh adduser.sh &lt;user&gt; &lt;group&gt; :添加/修改用户到组, 组可用值: hive-admin, hive-read</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash"> sh deleteuser &lt;user&gt;: 删除用户</span></span></pre></td></tr></table></figure>
+
+<p><strong>修改</strong></p>
+<p><strong>[19:00] 重启</strong></p>
+<p>影响范围：</p>
+<ul>
+<li>Yarn</li>
+<li>Hue</li>
+<li>Impala</li>
+<li>Hive</li>
+<li>Oozie</li>
+<li>YARN</li>
+</ul>
+<p><strong>[19:00-20:00] 验证</strong></p>
+<p>用例1：</p>
+<p>在hive-read组提交了几个大任务的条件下，azkaban调度用户通过Hive Gateway提交任务。观察azkaban调度用户能否获得足够的资源。</p>
+<ol>
+<li>登录Hive Gateway，做好使用azk用户提交任务的准备</li>
+<li>通过脚本，使用hive-admin和hive-read组的用户名向hive发送SQL，创建几个大任务</li>
+<li>在Hive Gateway上使用azk用户提交任务</li>
+</ol>
+<p>用例2：</p>
+<p>使用azkaban调度用户，在<code>hive -e &quot;&lt;HQL&gt;&quot;</code> 的 HQL 中设定 <code>mepreduce.queue.name</code>和<code>mepred.queue.name</code></p>
+<h2 id="容量调度器-Deprecated"><a href="#容量调度器-Deprecated" class="headerlink" title="容量调度器(Deprecated)"></a>容量调度器(Deprecated)</h2><p>由于我罗使用了Sentry认证，而Sentry底层全部使用hive用户并且关闭了模拟（impersonate），故而<label style="color: red;">无法使用容量调度器满足我罗需求</label>。</p>
+<h3 id="配置详解-1"><a href="#配置详解-1" class="headerlink" title="配置详解"></a>配置详解</h3><h4 id="公共配置"><a href="#公共配置" class="headerlink" title="公共配置"></a>公共配置</h4><p><strong>Overview</strong></p>
+<p>为了便于管理用户提交的任务，因此将用户分组，提交任务时按分组提交到对应的队列中。具体规则如下：</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODYzMDY3MjIx.png" alt="组提交队列规则"></p>
+<p><strong>配置</strong></p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.maximum-applications<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>10000<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>队列容量，包含状态为Pending和Running的application<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.maximum-am-resource-percent<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>100<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>集群中用于运行application master的资源占比。可用于控制application的并发数。<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.resource-calculator<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>org.apache.hadoop.yarn.util.resource.DominantResourceCalculator<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>计算资源数量的具体实现。DominantResourceCalculator: 内存，CPU;DefaultResourceCalculator: 内存。<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">15</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">16</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">17</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.queue-mappings<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">18</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>g:supergroup:supergroup,g:hive-admin:hive-admin,g:hive-read:hive-read,g:default:hive-read<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">19</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>用户/组 与 队列的对应关系。格式: [u or g]:[name]:[queue_name][,next_mapping]*<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">20</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">21</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">22</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.queue-mappings-override.enable<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">23</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>true<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">24</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>确保用户提交的任务被放入指定的队列中。<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">25</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">26</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">27</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.state<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">28</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>RUNNING<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">29</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>yarn.scheduler.capacity.&#123;queue_path&#125;.state。可用于启停指定queue_path的队列</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">30</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">31</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr></table></figure>
+
+<p><strong>将root队列分为default, admin队列</strong></p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.queues<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>supergroup,default<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>容量调度器中，root队列下必须有一个名为default的队列<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr></table></figure>
+
+<p><strong>supergroup队列配置</strong></p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.supergroup.capacity<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>80<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>默认队列容量<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.supergroup.maximum-capacity<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>95<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>最大队列容量<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.supergroup.minimum-user-limit-percent<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>30<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>每个用户的最低资源保证<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">15</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">16</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">17</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.supergroup.user-limit-factor<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">18</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>100<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">19</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>每个用户可用的最大资源占比<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">20</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">21</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">&lt;!-- 已通过用户组映射限定用户提交任务到指定队列，无需配置</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">22</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">&lt;property&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">23</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">    &lt;name&gt;yarn.scheduler.capacity.root.supergroup.acl_submit_applications&lt;/name&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">24</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">    &lt;value&gt;hdfs,dwadmin,datadev&lt;/value&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">25</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">    &lt;description&gt;只允许hdfs,dwadmin,datadev三个用户向supergroup队列提交任务&lt;/description&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">26</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">&lt;/property&gt; --&gt;</span></span></pre></td></tr></table></figure>
+
+<p><strong>default队列配置</strong></p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.default.queues<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>hive-admin,hive-read<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>root.default队列分为hive-admin,hive-read两个子队列<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.default.capacity<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>20<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>默认队列容量<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.default.maximum-capacity<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>60<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>最大队列容量<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">15</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">16</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">17</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">18</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.default.hive-admin.capacity<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">19</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>60<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">20</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>默认队列容量<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">21</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">22</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">23</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.default.hive-admin.maximum-capacity<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">24</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>80<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">25</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>最大队列容量<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">26</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">27</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">28</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.default.hive-admin.minimum-user-limit-percent<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">29</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>30<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">30</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>每个用户的最低资源保证<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">31</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">32</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">33</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.default.hive-admin.user-limit-factor<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">34</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>80<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">35</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>每个用户可用的最大资源占比<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">36</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">37</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">38</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.default.hive-read.capacity<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">39</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>40<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">40</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>默认队列容量<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">41</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">42</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">43</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.default.hive-read.maximum-capacity<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">44</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>60<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">45</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>最大队列容量<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">46</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">47</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">48</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.default.hive-read.minimum-user-limit-percent<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">49</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>30<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">50</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>每个用户的最低资源保证<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">51</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">52</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">53</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>yarn.scheduler.capacity.root.default.hive-read.user-limit-factor<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">54</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span>60<span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">55</span></pre></td><td class="code"><pre><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">description</span>&gt;</span>每个用户可以使用的最大资源占比<span class="hljs-tag">&lt;/<span class="hljs-name">description</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">56</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">57</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">&lt;!-- 已通过用户组映射限定用户提交任务到指定队列，无需配置</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">58</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">&lt;property&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">59</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">    &lt;name&gt;yarn.scheduler.capacity.root.default.hive-admin.acl_submit_applications&lt;/name&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">60</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">    &lt;value&gt;usera,userb,userc&lt;/value&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">61</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">    &lt;description&gt;可以向root.default.hive-admin提交任务的用户&lt;/description&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">62</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">&lt;/property&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">63</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">&lt;property&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">64</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">    &lt;name&gt;yarn.scheduler.capacity.root.default.hive-read.acl_submit_applications&lt;/name&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">65</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">    &lt;value&gt;*&lt;/value&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">66</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">    &lt;description&gt;所有人都可以向root.default.hive-read&lt;/description&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">67</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">&lt;/property&gt; --&gt;</span></span></pre></td></tr></table></figure>
+
+<h3 id="运维手册"><a href="#运维手册" class="headerlink" title="运维手册"></a>运维手册</h3><p><strong>窗口期</strong></p>
+<p>下午8点之后有调度，因此尽量在下午8点之前；暂定下午7-8点进行离线集群Yarn的维护。其中不涉及重启的部分不影响正常使用，因此可以先行修改如下配置，之后发公告留出一个小时的窗口期用于重启和验证。</p>
+<p><strong>[18:30] 发布公告</strong></p>
+<p>声明将于19点-20点进行Yarn的维护，届时Hive、Hue、Impala将不可用，Presto可正常使用</p>
+<p><strong>修改调度器配置</strong></p>
+<p>修改 <strong>“容量调度程序配置高级配置代码段”</strong>，添加<a href="#_2-1-配置详解">2.1. 配置详解</a>中提到的配置</p>
+<p><strong>修改用户分组</strong></p>
+<p>假设当前用户组映射的具体实现为 org.apache.hadoop.security.ShellBasedUnixGroupsMapping，因此<a href="https://hadoop.apache.org/docs/r2.6.0/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html" target="_blank" rel="noopener">用户组映射关系基于Name Node所在的操作系统用户组设置</a>[^2]。</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODYzMDk1OTk3.png" alt="Group Mapping">  </p>
+<p>首先在Hue管理用户界面配置用户组映射，然后登录如下主机操作：</p>
+<ul>
+<li>master1.cal.bgd.mjq.luojilab.com (NN)</li>
+</ul>
+<figure class="highlight shell hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash"> 创建用户组映射</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">hdfs: supergroup</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">dwadmin: supergroup</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">datadev: supergroup</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">usera: hive-admin</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">userb: hive-admin</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">userc: hive-admin</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">xxxx1: hive-read</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line">xxxx2: hive-read</span></pre></td></tr></table></figure>
+
+<p><strong>切换调度器</strong></p>
+<p>修改<strong>Scheduler 类</strong>:  </p>
+<ul>
+<li><input disabled type="checkbox"> <p>org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler</p>
+</li>
+<li><input disabled type="checkbox"> <p>org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler</p>
+</li>
+<li><input checked disabled type="checkbox"> <p>org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler</p>
+</li>
+</ul>
+<p><strong>[19:00] 重启</strong></p>
+<p>影响范围：</p>
+<ul>
+<li>Yarn</li>
+<li>Hue</li>
+<li>Impala</li>
+<li>Hive</li>
+<li>Oozie</li>
+<li>YARN</li>
+</ul>
+<p><strong>[19:00-20:00] 验证</strong></p>
+<p>如 1.2.5. 验证</p>
+<h2 id="是否重启？"><a href="#是否重启？" class="headerlink" title="是否重启？"></a>是否重启？</h2><ul>
+<li><strong>需要重启</strong>：修改了yarn-site.xml等其他组件依赖的配置。<ul>
+<li>例如：切换yarn的资源调度器</li>
+<li><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODYzMTAwNTU4.png" alt="需要重启"></li>
+</ul>
+</li>
+<li><strong>无需重启，需要刷新集群</strong>：修改其他组件不依赖的配置。<ul>
+<li>不切换yarn的资源调度器，而是仅仅修改队列配置、用户组映射等调度器具体配置时</li>
+<li><img src="https://piccdn.luojilab.com/fe-oss/default/MTU2ODYzMTA0NDUw.png" alt="无需重启"></li>
+</ul>
+</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文根据对 CM 动态资源池以及Yarn的公平/容量调度器的调研和实验结果，给出了两种调度资源管理策略，并最终确定下我罗通过CM 动态资源池、Yarn的公平容量调度器、Hive+Sentry用户认证的方式，实现队列资源隔离、队列资源可伸缩、队列访问控制。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
+<li><a href="https://cloud.tencent.com/developer/article/1363400" target="_blank" rel="noopener">Hive启用Sentry后如何限制用户提交Yarn资源池</a>  </li>
+<li><a href="https://mp.weixin.qq.com/s?__biz=MzI4OTY3MTUyNg==&mid=2247490436&idx=1&sn=db264867fa87300ce9a4992509beebc9&chksm=ec2acb8ddb5d429b4834b7c83dbd40b9b83e7b01d88fdc1f44f9960c7aa61458fb8f8d952c10&scene=21#wechat_redirect" target="_blank" rel="noopener">如何使用Cloudera Manager设置使用YARN队列的ACL</a></li>
+<li><a href="https://cloud.tencent.com/developer/article/1361507" target="_blank" rel="noopener">如何在Cloudera Manager中配置Yarn放置规则</a>  </li>
+</ol>
+<p>[^1]: 因为 hdfs 等用户所在的主组另有他用，不能覆盖。<br>[^2]: 此外，如果启用了HDFS的HA，除了Name Node之外，用户组映射配置也需要同步到Name Node Standby节点。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Yarn/" rel="tag">Yarn</a>, <a class="has-link-grey -link" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" rel="tag">计算机资源管理</a>, <a class="has-link-grey -link" href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" rel="tag">资源调度</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/09/10/fontend/vue-stack-router/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Vue社区的路由解决方案：vue-stack-router</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/08/26/fontend/build-a-vue-component/">
+                <span class="level-item">如何打造一套Vue组件库</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left is-sticky">
+    
+        
+
+    <div class="card widget" id="toc">
+        <div class="card-content">
+            <div class="menu">
+                <h3 class="menu-label">
+                    目录
+                </h3>
+                <ul class="menu-list"><li>
+        <a class="is-flex" href="#背景">
+        <span class="has-mr-6">1</span>
+        <span>背景</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#目的">
+        <span class="has-mr-6">1.1</span>
+        <span>目的</span>
+        </a></li><li>
+        <a class="is-flex" href="#基本需求">
+        <span class="has-mr-6">1.2</span>
+        <span>基本需求</span>
+        </a></li><li>
+        <a class="is-flex" href="#队列配置">
+        <span class="has-mr-6">1.3</span>
+        <span>队列配置</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#公平调度器">
+        <span class="has-mr-6">2</span>
+        <span>公平调度器</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#配置详解">
+        <span class="has-mr-6">2.1</span>
+        <span>配置详解</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#放置规则">
+        <span class="has-mr-6">2.1.1</span>
+        <span>放置规则</span>
+        </a></li></ul></li></ul></li><li>
+        <a class="is-flex" href="#容量调度器-Deprecated">
+        <span class="has-mr-6">3</span>
+        <span>容量调度器(Deprecated)</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#配置详解-1">
+        <span class="has-mr-6">3.1</span>
+        <span>配置详解</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#公共配置">
+        <span class="has-mr-6">3.1.1</span>
+        <span>公共配置</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#运维手册">
+        <span class="has-mr-6">3.2</span>
+        <span>运维手册</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#是否重启？">
+        <span class="has-mr-6">4</span>
+        <span>是否重启？</span>
+        </a></li><li>
+        <a class="is-flex" href="#总结">
+        <span class="has-mr-6">5</span>
+        <span>总结</span>
+        </a></li><li>
+        <a class="is-flex" href="#参考资料">
+        <span class="has-mr-6">6</span>
+        <span>参考资料</span>
+        </a></li></ul>
+            </div>
+        </div>
+    </div>
+
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                标签
+            </h3>
+            <div class="field is-grouped is-grouped-multiline">
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Android/">
+                        <span class="tag">Android</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Docker/">
+                        <span class="tag">Docker</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Elasticsearch/">
+                        <span class="tag">Elasticsearch</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Java/">
+                        <span class="tag">Java</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Kubernetes/">
+                        <span class="tag">Kubernetes</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/NodeJs/">
+                        <span class="tag">NodeJs</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Yarn/">
+                        <span class="tag">Yarn</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+                        <span class="tag">八里庄技术沙龙</span>
+                        <span class="tag is-grey">4</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%89%8D%E7%AB%AF/">
+                        <span class="tag">前端</span>
+                        <span class="tag is-grey">5</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+                        <span class="tag">大数据</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">
+                        <span class="tag">并发编程</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/">
+                        <span class="tag">开源项目</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">
+                        <span class="tag">性能优化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/">
+                        <span class="tag">组件化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/">
+                        <span class="tag">计算机资源管理</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/">
+                        <span class="tag">资源调度</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered" style="flex-shrink: 1">
+                <div>
+                    
+                    <figure class="image is-128x128 has-mb-6">
+                        <img class="" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="罗辑思维技术团队">
+                    </figure>
+                    
+                    <p class="is-size-4 is-block">
+                        罗辑思维技术团队
+                    </p>
+                    
+                    
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <a href="/archives">
+                        <p class="title has-text-weight-normal">
+                            13
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <a href="/categories">
+                        <p class="title has-text-weight-normal">
+                            4
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <a href="/tags">
+                        <p class="title has-text-weight-normal">
+                            16
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/luojilab" target="_blank">
+                关注我</a>
+        </div>
+        
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/luojilab">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Website" href="https://www.igetget.com">
+                
+                <i class="fab fa-chrome"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2019/11/08/fontend/grid/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTYyODQwMTc5.png" alt="Grid 布局初探">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-07T16:00:00.000Z">2019-11-08</time></div>
+                    <a href="/2019/11/08/fontend/grid/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Grid 布局初探</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/11/07/dd-technical/ddmvvm-android/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MzQ0NjI1NDI4.png" alt="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-06T16:00:00.000Z">2019-11-07</time></div>
+                    <a href="/2019/11/07/dd-technical/ddmvvm-android/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/21/dd-technical/k8s/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTc1MjEzMzgy.png" alt="【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-20T16:00:00.000Z">2019-10-21</time></div>
+                    <a href="/2019/10/21/dd-technical/k8s/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/16/big-data/java-concurrent/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTIxOTYxNzc5.jpeg" alt="Java并发编程通识">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-15T16:00:00.000Z">2019-10-16</time></div>
+                    <a href="/2019/10/16/big-data/java-concurrent/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Java并发编程通识</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/09/20/dd-technical/process/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU2OTI1MjA0NDAx.png" alt="【八里庄技术沙龙-13 期】进度服务重构之路">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-19T16:00:00.000Z">2019-09-20</time></div>
+                    <a href="/2019/09/20/dd-technical/process/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-13 期】进度服务重构之路</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            链接
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="https://www.igetget.com/join" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">得到 App 校园招聘</span>
+                    </span>
+                    <span class="level-right">
+                        <span class="level-item tag">www.igetget.com</span>
+                    </span>
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+            <span class="level-start">
+                <span class="level-item">八里庄技术沙龙</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/">
+            <span class="level-start">
+                <span class="level-item">前端</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a><ul><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/NodeJs/">
+            <span class="level-start">
+                <span class="level-item">NodeJs</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li></ul></li><li>
+        <a class="level is-marginless" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+            <span class="level-start">
+                <span class="level-item">大数据</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/Android/" style="font-size: 10px;">Android</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Elasticsearch/" style="font-size: 10px;">Elasticsearch</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/NodeJs/" style="font-size: 10px;">NodeJs</a> <a href="/tags/Yarn/" style="font-size: 10px;">Yarn</a> <a href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/" style="font-size: 15px;">八里庄技术沙龙</a> <a href="/tags/%E5%89%8D%E7%AB%AF/" style="font-size: 20px;">前端</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 10px;">大数据</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" style="font-size: 10px;">并发编程</a> <a href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/" style="font-size: 10px;">开源项目</a> <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" style="font-size: 10px;">性能优化</a> <a href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/" style="font-size: 10px;">组件化</a> <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" style="font-size: 10px;">计算机资源管理</a> <a href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" style="font-size: 10px;">资源调度</a>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="Yarn 资源隔离与访问控制指北" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2019 yaokuan&nbsp;
+                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+<script>
+var IcarusThemeSettings = {
+    article: {
+        highlight: {
+            clipboard: true,
+            fold: 'unfolded'
+        }
+    }
+};
+</script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+
+
+
+    
+    
+<script src="/js/animation.js"></script>
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+<script src="/js/gallery.js" defer></script>
+
+    
+    
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+    
+    
+<!-- <a id="back-to-top" title="回到顶端" href="javascript:;"> -->
+<a id="back-to-top" title="回到顶端">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+
+</html>
