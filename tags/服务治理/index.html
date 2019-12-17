@@ -8,12 +8,12 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 
-<title>标签: 八里庄技术沙龙 - 罗辑思维技术博客</title>
+<title>标签: 服务治理 - 罗辑思维技术博客</title>
 
 
     <meta property="og:type" content="website">
 <meta property="og:title" content="罗辑思维技术博客">
-<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;tags&#x2F;%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99&#x2F;index.html">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;tags&#x2F;%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86&#x2F;index.html">
 <meta property="og:site_name" content="罗辑思维技术博客">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;images&#x2F;og_image.png">
@@ -129,7 +129,7 @@
         <nav class="breadcrumb" aria-label="breadcrumbs">
         <ul>
             <li><a href="/tags">标签</a></li>
-            <li class="is-active"><a href="#" aria-current="page">八里庄技术沙龙</a></li>
+            <li class="is-active"><a href="#" aria-current="page">服务治理</a></li>
         </ul>
         </nav>
     </div>
@@ -139,8 +139,8 @@
 <div class="card">
     
     <div class="card-image">
-        <a href="/2019/11/07/dd-technical/ddmvvm-android/" class="image is-7by1">
-            <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MzQ0NjI1NDI4.png" alt="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践">
+        <a href="/2019/12/16/zeroteam/You_have_to_know_the_rate_limit_of_the_series/" class="image is-7by1">
+            <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NjQ3NzIxNDM2.png" alt="不得不了解系列之限流">
         </a>
     </div>
     
@@ -149,19 +149,19 @@
         <div class="level article-meta is-size-7 is-mobile is-overflow-x-auto">
             <div class="level-left">
                 
-                <div class="level-item">liushuo</div>
+                <div class="level-item">欧二强</div>
                 
-                <time class="level-item has-text-grey" datetime="2019-11-06T16:00:00.000Z">2019-11-07</time>
+                <time class="level-item has-text-grey" datetime="2019-12-15T16:00:00.000Z">2019-12-16</time>
                 
                 <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                <a class="has-link-grey -link" href="/categories/%E5%9F%BA%E7%A1%80%E6%9E%B6%E6%9E%84/">基础架构</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    27 分钟 读完 (大约 4101 个字)
+                    1 小时 读完 (大约 6807 个字)
                 </span>
                 
                 
@@ -170,207 +170,19 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/11/07/dd-technical/ddmvvm-android/">【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践</a>
+                <a class="has-link-black-ter" href="/2019/12/16/zeroteam/You_have_to_know_the_rate_limit_of_the_series/">不得不了解系列之限流</a>
             
         </h1>
         <div class="content">
-            <p>大家好，我是刘硕，来自得到安卓客户端。主要负责业务架构方向的工程效能提升相关工作。我们希望，通过对工程架构的改造升级，践行工程化方面的一些通用实践。使安卓团队在研发效率和研发体验上得到整体提升，提高app稳定性。</p>
-<p>最近两年，我们在工程架构方面有了一些成果，主要围绕着工程架构，开发架构相关方面做了很多工作，大概分为两部分内容：组件化和mvvm开发架构。</p>
+            <h2 id="限流简介"><a href="#限流简介" class="headerlink" title="限流简介"></a>限流简介</h2><p>现在说到高可用系统，都会说到高可用的保护手段：缓存、降级和限流，本博文就主要说说限流。限流是流量限速（Rate Limit）的简称，是指只允许指定的事件进入系统，超过的部分将被拒绝服务、排队或等待、降级等处理。对于server服务而言，限流为了保证一部分的请求流量可以得到正常的响应，总好过全部的请求都不能得到响应，甚至导致系统雪崩。限流与熔断经常被人弄混，博主认为它们最大的区别在于限流主要在server实现，而熔断主要在client实现，当然了，一个服务既可以充当server也可以充当client，这也是让限流与熔断同时存在一个服务中，这两个概念才容易被混淆。</p>
+<p>那为什么需要限流呢？很多人第一反应就是服务扛不住了所以需要限流。这是不全面的说法，博主认为限流是因为资源的稀缺或出于安全防范的目的，采取的自我保护的措施。限流可以保证使用有限的资源提供最大化的服务能力，按照预期流量提供服务，超过的部分将会拒绝服务、排队或等待、降级等处理。</p>
         </div>
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/11/07/dd-technical/ddmvvm-android/#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    
-<div class="card">
-    
-    <div class="card-image">
-        <a href="/2019/10/21/dd-technical/k8s/" class="image is-7by1">
-            <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTc1MjEzMzgy.png" alt="【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践">
-        </a>
-    </div>
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                
-                <div class="level-item">sunqingyun</div>
-                
-                <time class="level-item has-text-grey" datetime="2019-10-20T16:00:00.000Z">2019-10-21</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    33 分钟 读完 (大约 4987 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/10/21/dd-technical/k8s/">【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践</a>
-            
-        </h1>
-        <div class="content">
-            <h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>罗辑思维是一家创业公司，主要产品有：得到App。主要有两类业务，线上: 订阅课程、商城、听书、讲座、电子书，线下：跨年演讲，得到大学，线下大课等。目前有高质量用户3300万，后端服务以容器方式运行，正在基于Kubernetes进行混合云建设，目前线上主要的主机资源是使用的阿里云。</p>
-<p>由于技术选型比较“激进”，并且践行微服务架构设计，目前的语言栈有：按照占比排名，Golang、Node.js、Python、Java、PHP、C++，之前使用云主机（ECS）带来的运行环境管理复杂、发布过程不统一等问题。所以，将应用容器化以及微服务治理，一直是较为迫切的需求。</p>
-        </div>
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/10/21/dd-technical/k8s/#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    
-<div class="card">
-    
-    <div class="card-image">
-        <a href="/2019/09/20/dd-technical/process/" class="image is-7by1">
-            <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU2OTI1MjA0NDAx.png" alt="【八里庄技术沙龙-13 期】进度服务重构之路">
-        </a>
-    </div>
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                
-                <div class="level-item">zuowenkang</div>
-                
-                <time class="level-item has-text-grey" datetime="2019-09-19T16:00:00.000Z">2019-09-20</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    29 分钟 读完 (大约 4369 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/09/20/dd-technical/process/">【八里庄技术沙龙-13 期】进度服务重构之路</a>
-            
-        </h1>
-        <div class="content">
-            <h2 id="进度服务是什么"><a href="#进度服务是什么" class="headerlink" title="进度服务是什么"></a>进度服务是什么</h2><p>要说明进度服务是什么，首先要说明进度是什么。得到app主要提供内容服务，用户在使用内容服务的时候，就会产生进度。如图，进度的元素无处不在，收听百分比，已听完等。</p>
-        </div>
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/09/20/dd-technical/process/#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    
-<div class="card">
-    
-    <div class="card-image">
-        <a href="/2019/08/14/dd-technical/ddgw/" class="image is-7by1">
-            <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU2NzE1Mjk5Mjg1.jpeg" alt="【八里庄技术沙龙-12 期】如何从零实现一个高性能的API网关">
-        </a>
-    </div>
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                
-                <div class="level-item">yanbo</div>
-                
-                <time class="level-item has-text-grey" datetime="2019-08-13T16:00:00.000Z">2019-08-14</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    15 分钟 读完 (大约 2315 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/08/14/dd-technical/ddgw/">【八里庄技术沙龙-12 期】如何从零实现一个高性能的API网关</a>
-            
-        </h1>
-        <div class="content">
-            <h2 id="API网关是什么？"><a href="#API网关是什么？" class="headerlink" title="API网关是什么？"></a>API网关是什么？</h2><p>要回答这个问题我们需要先了解下我们得到的架构变迁。<br><img src="https://piccdn.luojilab.com/fe/blog/20190918/upload_7f178cd4397fa1e5d7c8a7077e5dd880.png" alt="单体应用架构"></p>
-<p>我们公司最早的时候都是PHP实现的单体应用，比如生活作风的H5商城，得到的V3。这张图就是我们得到的早期架构，当时所有的业务逻辑实现全部在V3当中，然后DCAPI封装了与数据库的交互。这就是一个典型的单体应用架构。</p>
-        </div>
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/08/14/dd-technical/ddgw/#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/12/16/zeroteam/You_have_to_know_the_rate_limit_of_the_series/#more">阅读更多</a>
                 </div>
             </div>
         </div>
