@@ -6,6 +6,8 @@
 3. [【第13期】进度服务重构之路](https://blog.luojilab.com/2019/09/20/dd-technical/process/)
 2. [【第12期】如何从零实现一个高性能的API网](https://blog.luojilab.com/2019/08/14/dd-technical/ddgw/)
 
+## 基础架构
+1. [不得不了解系列之限流](https://blog.luojilab.com/2019/12/16/zeroteam/You_have_to_know_the_rate_limit_of_the_series/)
 
 ## 前端
 1. [Vue社区的路由解决方案：vue-stack-router](https://blog.luojilab.com/2019/09/10/fontend/vue-stack-router/)
