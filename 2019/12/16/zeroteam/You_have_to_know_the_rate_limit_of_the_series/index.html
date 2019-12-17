@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html  lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+
+<meta name="generator" content="Hexo 4.1.0" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<title>不得不了解系列之限流 - 罗辑思维技术博客</title>
+
+
+    <meta name="description" content="限流简介现在说到高可用系统，都会说到高可用的保护手段：缓存、降级和限流，本博文就主要说说限流。限流是流量限速（Rate Limit）的简称，是指只允许指定的事件进入系统，超过的部分将被拒绝服务、排队或等待、降级等处理。对于server服务而言，限流为了保证一部分的请求流量可以得到正常的响应，总好过全部的请求都不能得到响应，甚至导致系统雪崩。限流与熔断经常被人弄混，博主认为它们最大的区别在于限流主要">
+<meta property="og:type" content="article">
+<meta property="og:title" content="不得不了解系列之限流">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2019&#x2F;12&#x2F;16&#x2F;zeroteam&#x2F;You_have_to_know_the_rate_limit_of_the_series&#x2F;index.html">
+<meta property="og:site_name" content="罗辑思维技术博客">
+<meta property="og:description" content="限流简介现在说到高可用系统，都会说到高可用的保护手段：缓存、降级和限流，本博文就主要说说限流。限流是流量限速（Rate Limit）的简称，是指只允许指定的事件进入系统，超过的部分将被拒绝服务、排队或等待、降级等处理。对于server服务而言，限流为了保证一部分的请求流量可以得到正常的响应，总好过全部的请求都不能得到响应，甚至导致系统雪崩。限流与熔断经常被人弄混，博主认为它们最大的区别在于限流主要">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https:&#x2F;&#x2F;piccdn.luojilab.com&#x2F;fe-oss&#x2F;default&#x2F;MTU3NjQ3NzIxNDM2.png">
+<meta property="article:published_time" content="2019-12-15T16:00:00.000Z">
+<meta property="article:modified_time" content="2019-12-17T06:19:49.914Z">
+<meta property="article:tag" content="微服务">
+<meta property="article:tag" content="服务治理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https:&#x2F;&#x2F;piccdn.luojilab.com&#x2F;fe-oss&#x2F;default&#x2F;MTU3NjQ3NzIxNDM2.png">
+
+
+
+
+
+
+
+<link rel="icon" href="/images/favicon.svg">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+<style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+    
+    
+    
+    
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+    
+    
+    
+    
+    
+    
+    
+    <link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="不得不了解系列之限流" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">首页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/tags">标签</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-6-widescreen has-order-2 column-main">
+<div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NjQ3NzIxNDM2.png" alt="不得不了解系列之限流">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                
+                <div class="level-item">欧二强</div>
+                
+                <time class="level-item has-text-grey" datetime="2019-12-15T16:00:00.000Z">2019-12-16</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/%E5%9F%BA%E7%A1%80%E6%9E%B6%E6%9E%84/">基础架构</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    1 小时 读完 (大约 6807 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                不得不了解系列之限流
+            
+        </h1>
+        <div class="content">
+            <h2 id="限流简介"><a href="#限流简介" class="headerlink" title="限流简介"></a>限流简介</h2><p>现在说到高可用系统，都会说到高可用的保护手段：缓存、降级和限流，本博文就主要说说限流。限流是流量限速（Rate Limit）的简称，是指只允许指定的事件进入系统，超过的部分将被拒绝服务、排队或等待、降级等处理。对于server服务而言，限流为了保证一部分的请求流量可以得到正常的响应，总好过全部的请求都不能得到响应，甚至导致系统雪崩。限流与熔断经常被人弄混，博主认为它们最大的区别在于限流主要在server实现，而熔断主要在client实现，当然了，一个服务既可以充当server也可以充当client，这也是让限流与熔断同时存在一个服务中，这两个概念才容易被混淆。</p>
+<p>那为什么需要限流呢？很多人第一反应就是服务扛不住了所以需要限流。这是不全面的说法，博主认为限流是因为资源的稀缺或出于安全防范的目的，采取的自我保护的措施。限流可以保证使用有限的资源提供最大化的服务能力，按照预期流量提供服务，超过的部分将会拒绝服务、排队或等待、降级等处理。</p>
+<a id="more"></a>
+
+<p>现在的系统对限流的支持各有不同，但是存在一些标准。在HTTP RFC 6585标准中规定了『<a href="https://tools.ietf.org/html/rfc6585" target="_blank" rel="noopener">429 Too Many Requests</a> 』，429状态码表示用户在给定时间内发送了太多的请求，需要进行限流（“速率限制”），同时包含一个 Retry-After 响应头用于告诉客户端多长时间后可以再次请求服务。</p>
+<figure class="highlight html hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">HTTP/1.1 429 Too Many Requests</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">Content-Type: text/html</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">Retry-After: 3600</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">html</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">     <span class="hljs-tag">&lt;<span class="hljs-name">title</span>&gt;</span>Too Many Requests<span class="hljs-tag">&lt;/<span class="hljs-name">title</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-tag">&lt;/<span class="hljs-name">head</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">     <span class="hljs-tag">&lt;<span class="hljs-name">h1</span>&gt;</span>Too Many Requests<span class="hljs-tag">&lt;/<span class="hljs-name">h1</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line">     <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>I only allow 50 requests per hour to this Web site per</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line">        logged in user.  Try again soon.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line">  <span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span></span></pre></td></tr></table></figure>
+
+<p>很多应用框架同样集成了，限流功能并且在返回的Header中给出明确的限流标识。</p>
+<ul>
+<li>X-Rate-Limit-Limit：同一个时间段所允许的请求的最大数目；</li>
+<li>X-Rate-Limit-Remaining：在当前时间段内剩余的请求的数量；</li>
+<li>X-Rate-Limit-Reset：为了得到最大请求数所等待的秒数。</li>
+</ul>
+<p>这是通过响应头告诉调用方服务端的限流频次是怎样的，保证后端的接口访问上限，客户端也可以根据响应的Header调整请求。</p>
+<h2 id="限流分类"><a href="#限流分类" class="headerlink" title="限流分类"></a>限流分类</h2><p><code>限流</code>，拆分来看，就两个字<code>限</code>和<code>流</code>，<code>限</code>就是动词限制，很好理解。但是<code>流</code>在不同的场景之下就是不同资源或指标，多样性就在<code>流</code>中体现。在网络流量中可以是字节流，在数据库中可以是TPS，在API中可以是QPS亦可以是并发请求数，在商品中还可以是库存数… …但是不管是哪一种『流』，这个流必须可以<strong>被量化，可以被度量，可以被观察到、可以统计出来</strong>。<br>我们把限流的分类基于不同的方式分为不同的类别，如下图。</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NjQ3NzIxNDM2.png" alt="限流分类"></p>
+<p>因为篇幅有限，本文只会挑选几个常见的类型分类进行说明。</p>
+<h3 id="限流粒度分类"><a href="#限流粒度分类" class="headerlink" title="限流粒度分类"></a>限流粒度分类</h3><p>根据限流的粒度分类：</p>
+<ul>
+<li>单机限流</li>
+<li>分布式限流</li>
+</ul>
+<p>现状的系统基本上都是分布式架构，单机的模式已经很少了，这里说的单机限流更加准确一点的说法是单服务节点限流。单机限流是指请求进入到某一个服务节点后超过了限流阈值，服务节点采取了一种限流保护措施。</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NjQ3NzI1MjM1.png" alt="单机限流示意图"></p>
+<p>分布式限流狭义的说法是在接入层实现多节点合并限流，比如NGINX+redis，分布式网关等，广义的分布式限流是多个节点（可以为不同服务节点）有机整合，形成整体的限流服务。</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NjQ3NzI1MzY4.png" alt="分布式限流示意图"></p>
+<p>单机限流防止流量压垮服务节点，缺乏对整体流量的感知。分布式限流适合做细粒度不同的限流控制，可以根据场景不同匹配不同的限流规则。与单机限流最大的区别，分布式限流需要中心化存储，常见的使用redis实现。引入了中心化存储，就需要解决以下问题：</p>
+<ul>
+<li><p>数据一致性</p>
+<p>在限流模式中理想的模式为时间点一致性。时间点一致性的定义中要求所有数据组件的数据在任意时刻都是完全一致的，但是一般来说信息传播的速度最大是光速，其实并不能达到任意时刻一致，总有一定的时间不一致，对于我们CAP中的一致性来说只要达到读取到最新数据即可，达到这种情况并不需要严格的任意时间一致。这只能是理论当中的一致性模型，可以在限流中达到线性一致性即可。</p>
+</li>
+<li><p>时间一致性</p>
+<p>这里的时间一致性与上述的时间点一致性不一样，这里就是指各个服务节点的时间一致性。一个集群有3台机器，但是在某一个A/B机器的时间为<code>Tue Dec  3 16:29:28 CST 2019</code>，C为<code>Tue Dec  3 16:29:28 CST 2019</code>，那么它们的时间就不一致。那么使用ntpdate进行同步也会存在一定的误差，对于时间窗口敏感的算法就是误差点。</p>
+</li>
+<li><p>超时</p>
+<p>在分布式系统中就需要网络进行通信，会存在网络抖动问题，或者分布式限流中间件压力过大导致响应变慢，甚至是超时时间阈值设置不合理，导致应用服务节点超时了，此时是放行流量还是拒绝流量？</p>
+</li>
+<li><p>性能与可靠性</p>
+<p>分布式限流中间件的资源总是有限的，甚至可能是单点的（写入单点），性能存在上限。如果分布式限流中间件不可用时候如何退化为单机限流模式也是一个很好的降级方案。</p>
+</li>
+</ul>
+<h3 id="限流对象类型分类"><a href="#限流对象类型分类" class="headerlink" title="限流对象类型分类"></a>限流对象类型分类</h3><p>按照对象类型分类：</p>
+<ul>
+<li>基于请求限流</li>
+<li>基于资源限流</li>
+</ul>
+<p>基于请求限流，一般的实现方式有<strong>限制总量</strong>和<strong>限制QPS</strong>。限制总量就是限制某个指标的上限，比如抢购某一个商品，放量是10w，那么最多只能卖出10w件。微信的抢红包，群里发一个红包拆分为10个，那么最多只能有10人可以抢到，第十一个人打开就会显示『手慢了，红包派完了』。</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NjQ3NzI1MjAy.jpeg" alt="红包抢完了"></p>
+<p>限制QPS，也是我们常说的限流方式，只要在接口层级进行，某一个接口只允许1秒只能访问100次，那么它的峰值QPS只能为100。限制QPS的方式最难的点就是如何预估阈值，如何定位阈值，下文中会说到。</p>
+<p>基于资源限流是基于服务资源的使用情况进行限制，需要定位到服务的关键资源有哪些，并对其进行限制，如限制TCP连接数、线程数、内存使用量等。限制资源更能有效地反映出服务当前地清理，但与限制QPS类似，面临着如何确认资源的阈值为多少。这个阈值需要不断地调优，不停地实践才可以得到一个较为满意地值。</p>
+<h3 id="限流算法分类"><a href="#限流算法分类" class="headerlink" title="限流算法分类"></a>限流算法分类</h3><p>不论是按照什么维度，基于什么方式的分类，其限流的底层均是需要算法来实现。下面介绍实现常见的限流算法：</p>
+<ul>
+<li>计数器</li>
+<li>令牌桶算法</li>
+<li>漏桶算法</li>
+</ul>
+<h4 id="计数器"><a href="#计数器" class="headerlink" title="计数器"></a>计数器</h4><h5 id="固定窗口计数器"><a href="#固定窗口计数器" class="headerlink" title="固定窗口计数器"></a>固定窗口计数器</h5><p>计数限流是最为简单的限流算法，日常开发中，我们说的限流很多都是说固定窗口计数限流算法，比如某一个接口或服务1s最多只能接收1000个请求，那么我们就会设置其限流为1000QPS。该算法的实现思路非常简单，维护一个固定单位时间内的计数器，如果检测到单位时间已经过去就重置计数器为零。</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NjQ3NzI1Mzg3.png" alt="固定窗口计数器原理"></p>
+<p>其操作步骤：</p>
+<ol>
+<li>时间线划分为多个独立且固定大小窗口；</li>
+<li>落在每一个时间窗口内的请求就将计数器加1；</li>
+<li>如果计数器超过了限流阈值，则后续落在该窗口的请求都会被拒绝。但时间达到下一个时间窗口时，计数器会被重置为0。</li>
+</ol>
+<p>下面实现一个简单的代码。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> limit</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">import</span> (</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">   <span class="hljs-string">"sync/atomic"</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">   <span class="hljs-string">"time"</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Counter <span class="hljs-keyword">struct</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">   Count       <span class="hljs-keyword">uint64</span>   <span class="hljs-comment">// 初始计数器</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">   Limit       <span class="hljs-keyword">uint64</span>  <span class="hljs-comment">// 单位时间窗口最大请求频次</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line">   Interval    <span class="hljs-keyword">int64</span>   <span class="hljs-comment">// 单位ms</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line">   RefreshTime <span class="hljs-keyword">int64</span>   <span class="hljs-comment">// 时间窗口</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line">&#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">15</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">NewCounter</span><span class="hljs-params">(count, limit <span class="hljs-keyword">uint64</span>, interval, rt <span class="hljs-keyword">int64</span>)</span> *<span class="hljs-title">Counter</span></span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">16</span></pre></td><td class="code"><pre><span class="line">   <span class="hljs-keyword">return</span> &amp;Counter&#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">17</span></pre></td><td class="code"><pre><span class="line">      Count:       count,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">18</span></pre></td><td class="code"><pre><span class="line">      Limit:       limit,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">19</span></pre></td><td class="code"><pre><span class="line">      Interval:    interval,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">20</span></pre></td><td class="code"><pre><span class="line">      RefreshTime: rt,</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">21</span></pre></td><td class="code"><pre><span class="line">   &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">22</span></pre></td><td class="code"><pre><span class="line">&#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">23</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">24</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(c *Counter)</span> <span class="hljs-title">RateLimit</span><span class="hljs-params">()</span> <span class="hljs-title">bool</span></span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">25</span></pre></td><td class="code"><pre><span class="line">   now := time.Now().UnixNano() / <span class="hljs-number">1e6</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">26</span></pre></td><td class="code"><pre><span class="line">   <span class="hljs-keyword">if</span> now &lt; (c.RefreshTime + c.Interval) &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">27</span></pre></td><td class="code"><pre><span class="line">      atomic.AddUint64(&amp;c.Count, <span class="hljs-number">1</span>)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">28</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-keyword">return</span> c.Count &lt;= c.Limit</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">29</span></pre></td><td class="code"><pre><span class="line">   &#125; <span class="hljs-keyword">else</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">30</span></pre></td><td class="code"><pre><span class="line">      c.RefreshTime = now</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">31</span></pre></td><td class="code"><pre><span class="line">      atomic.AddUint64(&amp;c.Count, -c.Count)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">32</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">33</span></pre></td><td class="code"><pre><span class="line">   &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">34</span></pre></td><td class="code"><pre><span class="line">&#125;</span></pre></td></tr></table></figure>
+
+<p>测试代码：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> limit</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">import</span> (</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">   <span class="hljs-string">"fmt"</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">   <span class="hljs-string">"testing"</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">   <span class="hljs-string">"time"</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Test_Counter</span><span class="hljs-params">(t *testing.T)</span></span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">   counter := NewCounter(<span class="hljs-number">0</span>, <span class="hljs-number">5</span>, <span class="hljs-number">100</span>, time.Now().Unix())</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line">   <span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">10</span>; i++ &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(i <span class="hljs-keyword">int</span>)</span></span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line">         <span class="hljs-keyword">for</span> k := <span class="hljs-number">0</span>; k &lt;= <span class="hljs-number">10</span>; k++ &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line">            fmt.Println(counter.RateLimit())</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">15</span></pre></td><td class="code"><pre><span class="line">            <span class="hljs-keyword">if</span> k%<span class="hljs-number">3</span> == <span class="hljs-number">0</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">16</span></pre></td><td class="code"><pre><span class="line">               time.Sleep(<span class="hljs-number">102</span> * time.Millisecond)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">17</span></pre></td><td class="code"><pre><span class="line">            &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">18</span></pre></td><td class="code"><pre><span class="line">         &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">19</span></pre></td><td class="code"><pre><span class="line">      &#125;(i)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">20</span></pre></td><td class="code"><pre><span class="line">   &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">21</span></pre></td><td class="code"><pre><span class="line">   time.Sleep(<span class="hljs-number">10</span> * time.Second)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">22</span></pre></td><td class="code"><pre><span class="line">&#125;</span></pre></td></tr></table></figure>
+
+<p>看了上面的逻辑，有没有觉得固定窗口计数器很简单，对，就是这么简单，这就是它的一个优点实现简单。同时也存在两个比较严重缺陷。试想一下，固定时间窗口1s限流阈值为100，但是前100ms，已经请求来了99个，那么后续的900ms只能通过一个了，就是一个缺陷，基本上没有应对突发流量的能力。第二个缺陷，在00:00:00这个时间窗口的后500ms，请求通过了100个，在00:00:01这个时间窗口的前500ms还有100个请求通过，对于服务来说相当于1秒内请求量达到了限流阈值的2倍。</p>
+<h5 id="滑动窗口计数器"><a href="#滑动窗口计数器" class="headerlink" title="滑动窗口计数器"></a>滑动窗口计数器</h5><p>滑动时间窗口算法是对固定时间窗口算法的一种改进，这词被大众所知实在TCP的流量控制中。固定窗口计数器可以说是滑动窗口计数器的一种特例，滑动窗口的操作步骤：</p>
+<ol>
+<li>将单位时间划分为多个区间，一般都是均分为多个小的时间段；</li>
+<li>每一个区间内都有一个计数器，有一个请求落在该区间内，则该区间内的计数器就会加一；</li>
+<li>每过一个时间段，时间窗口就会往右滑动一格，抛弃最老的一个区间，并纳入新的一个区间；</li>
+<li>计算整个时间窗口内的请求总数时会累加所有的时间片段内的计数器，计数总和超过了限制数量，则本窗口内所有的请求都被丢弃。</li>
+</ol>
+<p>时间窗口划分的越细，并且按照时间”滑动”，这种算法避免了固定窗口计数器出现的上述两个问题。缺点是时间区间的精度越高，算法所需的空间容量就越大。</p>
+<p>常见的实现方式主要有基于redis zset的方式和循环队列实现。基于redis zset可将Key为限流标识ID，Value保持唯一，可以用UUID生成，Score 也记为同一时间戳，最好是纳秒级的。使用redis提供的 ZADD、EXPIRE、ZCOUNT 和 zremrangebyscore 来实现，并同时注意开启 Pipeline 来尽可能提升性能。实现很简单，但是缺点就是zset的数据结构会越来越大。</p>
+<h4 id="漏桶算法"><a href="#漏桶算法" class="headerlink" title="漏桶算法"></a>漏桶算法</h4><p>漏桶算法是水先进入到漏桶里，漏桶再以一定的速率出水，当流入水的数量大于流出水时，多余的水直接溢出。把水换成请求来看，漏桶相当于服务器队列，但请求量大于限流阈值时，多出来的请求就会被拒绝服务。漏桶算法使用队列实现，可以以固定的速率控制流量的访问速度，可以做到流量的“平整化”处理。</p>
+<p>大家可以通过网上最流行的一张图来理解。</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NjQ3NzI1MzU2.png" alt="漏桶算法原理"></p>
+<p>漏桶算法实现步骤：</p>
+<ol>
+<li>将每个请求放入固定大小的队列进行存储；</li>
+<li>队列以固定速率向外流出请求，如果队列为空则停止流出；</li>
+<li>如队列满了则多余的请求会被直接拒绝·</li>
+</ol>
+<p>漏桶算法有一个明显的缺陷：当短时间内有大量的突发请求时，即使服务器负载不高，每个请求也都得在队列中等待一段时间才能被响应。</p>
+<h4 id="令牌桶算法"><a href="#令牌桶算法" class="headerlink" title="令牌桶算法"></a>令牌桶算法</h4><p>令牌桶算法的原理是系统会以一个恒定的速率往桶里放入令牌，而如果请求需要被处理，则需要先从桶里获取一个令牌，当桶里没有令牌可取时，则拒绝服务。从原理上看，令牌桶算法和漏桶算法是相反的，前者为“进”，后者为“出”。<br>漏桶算法与令牌桶算法除了“方向”上的不同还有一个更加主要的区别：令牌桶算法限制的是平均流入速率（允许突发请求，只要有足够的令牌，支持一次拿多个令牌），并允许一定程度突发流量；</p>
+<p>令牌桶算法的实现步骤：</p>
+<ol>
+<li>令牌以固定速率生成并放入到令牌桶中；</li>
+<li>如果令牌桶满了则多余的令牌会直接丢弃，当请求到达时，会尝试从令牌桶中取令牌，取到了令牌的请求可以执行；</li>
+<li>如果桶空了，则拒绝该请求。</li>
+</ol>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NjQ3NzI1MjIz.png" alt="令牌桶算法原理"></p>
+<h4 id="四种策略该如何选择？"><a href="#四种策略该如何选择？" class="headerlink" title="四种策略该如何选择？"></a>四种策略该如何选择？</h4><ul>
+<li>固定窗口：实现简单，但是过于粗暴，除非情况紧急，为了能快速止损眼前的问题可以作为临时应急的方案。</li>
+<li>滑动窗口：限流算法简单易实现，可以应对有少量突增流量场景。</li>
+<li>漏桶：对于流量绝对均匀有很强的要求，资源的利用率上不是极致，但其宽进严出模式，保护系统的同时还留有部分余量，是一个通用性方案。</li>
+<li>令牌桶：系统经常有突增流量，并尽可能的压榨服务的性能。</li>
+</ul>
+<h2 id="怎么做限流？"><a href="#怎么做限流？" class="headerlink" title="怎么做限流？"></a>怎么做限流？</h2><p>不论使用上述的哪一种分类或者实现方式，系统都会面临一个共同的问题：如何确认限流阈值。<br>有人团队根据经验先设定一个小的阈值，后续慢慢进行调整；有的团队是通过进行压力测试后总结出来。这种方式的问题在于压测模型与线上环境不一定一致，接口的单压不能反馈整个系统的状态，全链路压测又难以真实反应实际流量场景流量比例。再换一个思路是通过压测+各应用监控数据。根据系统峰值的QPS与系统资源使用情况，进行等水位放大预估限流阈值，问题在于系统性能拐点未知，单纯的预测不一定准确甚至极大偏离真实场景。<br>正如<a href="https://www.cs.columbia.edu/~ruigu/papers/socc18-final100.pdf" target="_blank" rel="noopener">《Overload Control for Scaling WeChat Microservices》</a>所说，在具有复杂依赖关系的系统中，对特定服务的进行过载控制可能对整个系统有害或者服务的实现有缺陷。<br>希望后续可以出现一个更加AI的运行反馈自动设置限流阈值的系统，可以根据当前QPS、资源状态、RT情况等多种关联数据动态地进行过载保护。</p>
+<p>不论是哪一种方式给出的限流阈值，系统都应该关注以下几点：</p>
+<ol>
+<li>运行指标状态，比如当前服务的QPS、机器资源使用情况、数据库的连接数、线程的并发数等；</li>
+<li>资源间的调用关系，外部链路请求、内部服务之间的关联、服务之间的强弱依赖等；</li>
+<li>控制方式，达到限流后对后续的请求直接拒绝、快速失败、排队等待等处理方式</li>
+</ol>
+<h2 id="go限流类库使用"><a href="#go限流类库使用" class="headerlink" title="go限流类库使用"></a>go限流类库使用</h2><p>限流的类库有很多，不同语言的有不同的类库，如大Java的有concurrency-limits、Sentinel、Guava 等，这些类库都有很多的分析和使用方式了，本文主要介绍Golang的限流类库就是Golang的扩展库：<a href="https://github.com/golang/time/rate" target="_blank" rel="noopener">https://github.com/golang/time/rate</a> 。可以进去语言类库的代码都值得去研读一番，学习过Java的同学是否对AQS的设计之精妙而感叹呢！<br><code>time/rate</code> 也有其精妙的部分，下面开始进入类库学习阶段。</p>
+<h3 id="github-com-golang-time-rate"><a href="#github-com-golang-time-rate" class="headerlink" title="github.com/golang/time/rate"></a>github.com/golang/time/rate</h3><p>进行源码分析前的，最应该做的是了解类库的使用方式、使用场景和API。对业务有了初步的了解，阅读代码就可以事半功倍。因为篇幅有限后续的博文在对多个限流类库源码做分析。<br>类库的API文档：<a href="https://godoc.org/golang.org/x/time/rate。" target="_blank" rel="noopener">https://godoc.org/golang.org/x/time/rate。</a><br>time/rate类库是基于令牌桶算法实现的限流功能。前面说令牌桶算法的原理是系统会以一个恒定的速率往桶里放入令牌，那么桶就有一个固定的大小，往桶中放入令牌的速率也是恒定的，并且允许突发流量。查看文档发现一个函数：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">NewLimiter</span><span class="hljs-params">(r Limit, b <span class="hljs-keyword">int</span>)</span> *<span class="hljs-title">Limiter</span></span></span></pre></td></tr></table></figure>
+<p>newLimiter返回一个新的限制器，它允许事件的速率达到r，并允许最多突发b个令牌。也就是说Limter限制时间的发生频率，但这个桶一开始容量就为b，并且装满b个令牌（令牌池中最多有b个令牌，所以一次最多只能允许b个事件发生，一个事件花费掉一个令牌），然后每一个单位时间间隔（默认1s）往桶里放入r个令牌。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">limter := rate.NewLimiter(<span class="hljs-number">10</span>, <span class="hljs-number">5</span>)</span></pre></td></tr></table></figure>
+<p>上面的例子表示，令牌桶的容量为5，并且每一秒中就往桶里放入10个令牌。细心的读者都会发现函数NewLimiter第一个参数是Limit类型，可以看源码就会发现Limit实际上就是float64的别名。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Limit defines the maximum frequency of some events.</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Limit is represented as number of events per second.</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// A zero Limit allows no events.</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Limit <span class="hljs-keyword">float64</span></span></pre></td></tr></table></figure>
+
+<p>限流器还可以指定往桶里放入令牌的时间间隔，实现方式如下：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">limter := rate.NewLimiter(rate.Every(<span class="hljs-number">100</span>*time.Millisecond), <span class="hljs-number">5</span>)</span></pre></td></tr></table></figure>
+
+<p>这两个例子的效果是一样的，使用第一种方式不会出现在每一秒间隔一下子放入10个令牌，也是均匀分散在100ms的间隔放入令牌。<br>rate.Limiter提供了三类方法用来限速：</p>
+<ul>
+<li>Allow/AllowN </li>
+<li>Wait/WaitN </li>
+<li>Reserve/ReserveN</li>
+</ul>
+<p>下面对比这三类限流方式的使用方式和适用场景。先看第一类方法：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(lim *Limiter)</span> <span class="hljs-title">Allow</span><span class="hljs-params">()</span> <span class="hljs-title">bool</span></span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(lim *Limiter)</span> <span class="hljs-title">AllowN</span><span class="hljs-params">(now time.Time, n <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">bool</span></span></span></pre></td></tr></table></figure>
+<p>Allow 是AllowN(time.Now(), 1)的简化方法。那么重点就在方法 AllowN上了，API的解释有点抽象，说得云里雾里的，可以看看下面的API文档解释:</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">AllowN reports whether n events may happen at time now. </span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">Use this method if you intend to drop &#x2F; skip events that exceed the rate limit. </span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">Otherwise use Reserve or Wait.</span></pre></td></tr></table></figure>
+<p>实际上就是为了说，方法 AllowN在指定的时间时是否可以从令牌桶中取出N个令牌。也就意味着可以限定N个事件是否可以在指定的时间同时发生。这个两个方法是无阻塞，也就是说一旦不满足，就会跳过，不会等待令牌数量足够才执行。也就是文档中的第二行解释，如果打算丢失或跳过超出速率限制的时间，那么久请使用该方法。比如使用之前实例化好的限流器，在某一个时刻，服务器同时收到超过了8个请求，如果令牌桶内令牌小于8个，那么这8个请求就会被丢弃。<br>一个小示例：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">AllowDemo</span><span class="hljs-params">()</span></span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">   limter := rate.NewLimiter(rate.Every(<span class="hljs-number">200</span>*time.Millisecond), <span class="hljs-number">5</span>)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">   i := <span class="hljs-number">0</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">   <span class="hljs-keyword">for</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">      i++</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-keyword">if</span> limter.Allow() &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">         fmt.Println(i, <span class="hljs-string">"====Allow======"</span>, time.Now())</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">      &#125; <span class="hljs-keyword">else</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">         fmt.Println(i, <span class="hljs-string">"====Disallow======"</span>, time.Now())</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">      &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line">      time.Sleep(<span class="hljs-number">80</span> * time.Millisecond)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-keyword">if</span> i == <span class="hljs-number">15</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line">         <span class="hljs-keyword">return</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line">      &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">15</span></pre></td><td class="code"><pre><span class="line">   &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">16</span></pre></td><td class="code"><pre><span class="line">&#125;</span></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">1 &#x3D;&#x3D;&#x3D;&#x3D;Allow&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; 2019-12-14 15:54:09.9852178 +0800 CST m&#x3D;+0.005998001</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">2 &#x3D;&#x3D;&#x3D;&#x3D;Allow&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; 2019-12-14 15:54:10.1012231 +0800 CST m&#x3D;+0.122003301</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">3 &#x3D;&#x3D;&#x3D;&#x3D;Allow&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; 2019-12-14 15:54:10.1823056 +0800 CST m&#x3D;+0.203085801</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">4 &#x3D;&#x3D;&#x3D;&#x3D;Allow&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; 2019-12-14 15:54:10.263238 +0800 CST m&#x3D;+0.284018201</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">5 &#x3D;&#x3D;&#x3D;&#x3D;Allow&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; 2019-12-14 15:54:10.344224 +0800 CST m&#x3D;+0.365004201</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">6 &#x3D;&#x3D;&#x3D;&#x3D;Allow&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; 2019-12-14 15:54:10.4242458 +0800 CST m&#x3D;+0.445026001</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">7 &#x3D;&#x3D;&#x3D;&#x3D;Allow&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; 2019-12-14 15:54:10.5043101 +0800 CST m&#x3D;+0.525090301</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">8 &#x3D;&#x3D;&#x3D;&#x3D;Allow&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; 2019-12-14 15:54:10.5852232 +0800 CST m&#x3D;+0.606003401</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">9 &#x3D;&#x3D;&#x3D;&#x3D;Disallow&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; 2019-12-14 15:54:10.6662181 +0800 CST m&#x3D;+0.686998301</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">10 &#x3D;&#x3D;&#x3D;&#x3D;Disallow&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; 2019-12-14 15:54:10.7462189 +0800 CST m&#x3D;+0.766999101</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line">11 &#x3D;&#x3D;&#x3D;&#x3D;Allow&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; 2019-12-14 15:54:10.8272182 +0800 CST m&#x3D;+0.847998401</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line">12 &#x3D;&#x3D;&#x3D;&#x3D;Disallow&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; 2019-12-14 15:54:10.9072192 +0800 CST m&#x3D;+0.927999401</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line">13 &#x3D;&#x3D;&#x3D;&#x3D;Allow&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; 2019-12-14 15:54:10.9872224 +0800 CST m&#x3D;+1.008002601</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line">14 &#x3D;&#x3D;&#x3D;&#x3D;Disallow&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; 2019-12-14 15:54:11.0672253 +0800 CST m&#x3D;+1.088005501</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">15</span></pre></td><td class="code"><pre><span class="line">15 &#x3D;&#x3D;&#x3D;&#x3D;Disallow&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; 2019-12-14 15:54:11.1472946 +0800 CST m&#x3D;+1.168074801</span></pre></td></tr></table></figure>
+
+<p>第二类方法：因为ReserveN比较复杂，第二类先说WaitN。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(lim *Limiter)</span> <span class="hljs-title">Wait</span><span class="hljs-params">(ctx context.Context)</span> <span class="hljs-params">(err error)</span></span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(lim *Limiter)</span> <span class="hljs-title">WaitN</span><span class="hljs-params">(ctx context.Context, n <span class="hljs-keyword">int</span>)</span> <span class="hljs-params">(err error)</span></span></span></pre></td></tr></table></figure>
+<p>类似Wait 是WaitN(ctx, 1)的简化方法。与AllowN不同的是WaitN会阻塞，如果令牌桶内的令牌数不足N个，WaitN会阻塞一段时间，阻塞时间的时长可以用第一个参数ctx进行设置，把 context 实例为context.WithDeadline或context.WithTimeout进行制定阻塞的时长。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">WaitNDemo</span><span class="hljs-params">()</span></span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">   limter := rate.NewLimiter(<span class="hljs-number">10</span>, <span class="hljs-number">5</span>)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">   i := <span class="hljs-number">0</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">   <span class="hljs-keyword">for</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">      i++</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">      ctx, canle := context.WithTimeout(context.Background(), <span class="hljs-number">400</span>*time.Millisecond)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-keyword">if</span> i == <span class="hljs-number">6</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">         <span class="hljs-comment">// 取消执行</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">         canle()</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">      &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line">      err := limter.WaitN(ctx, <span class="hljs-number">4</span>)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line">         fmt.Println(err)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">15</span></pre></td><td class="code"><pre><span class="line">         <span class="hljs-keyword">continue</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">16</span></pre></td><td class="code"><pre><span class="line">      &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">17</span></pre></td><td class="code"><pre><span class="line">      fmt.Println(i, <span class="hljs-string">",执行："</span>, time.Now())</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">18</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-keyword">if</span> i == <span class="hljs-number">10</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">19</span></pre></td><td class="code"><pre><span class="line">         <span class="hljs-keyword">return</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">20</span></pre></td><td class="code"><pre><span class="line">      &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">21</span></pre></td><td class="code"><pre><span class="line">   &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">22</span></pre></td><td class="code"><pre><span class="line">&#125;</span></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">1 ,执行： 2019-12-14 15:45:15.538539 +0800 CST m&#x3D;+0.011023401</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">2 ,执行： 2019-12-14 15:45:15.8395195 +0800 CST m&#x3D;+0.312003901</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">3 ,执行： 2019-12-14 15:45:16.2396051 +0800 CST m&#x3D;+0.712089501</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">4 ,执行： 2019-12-14 15:45:16.6395169 +0800 CST m&#x3D;+1.112001301</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">5 ,执行： 2019-12-14 15:45:17.0385893 +0800 CST m&#x3D;+1.511073701</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">context canceled</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">7 ,执行： 2019-12-14 15:45:17.440514 +0800 CST m&#x3D;+1.912998401</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">8 ,执行： 2019-12-14 15:45:17.8405152 +0800 CST m&#x3D;+2.312999601</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">9 ,执行： 2019-12-14 15:45:18.2405402 +0800 CST m&#x3D;+2.713024601</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">10 ,执行： 2019-12-14 15:45:18.6405179 +0800 CST m&#x3D;+3.113002301</span></pre></td></tr></table></figure>
+
+<p>适用于允许阻塞等待的场景，比如消费消息队列的消息，可以限定最大的消费速率，过大了就会被限流避免消费者负载过高。</p>
+<p>第三类方法：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(lim *Limiter)</span> <span class="hljs-title">Reserve</span><span class="hljs-params">()</span> *<span class="hljs-title">Reservation</span></span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(lim *Limiter)</span> <span class="hljs-title">ReserveN</span><span class="hljs-params">(now time.Time, n <span class="hljs-keyword">int</span>)</span> *<span class="hljs-title">Reservation</span></span></span></pre></td></tr></table></figure>
+<p>与之前的两类方法不同的是Reserve/ReserveN返回了Reservation实例。Reservation在API文档中有5个方法：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(r *Reservation)</span> <span class="hljs-title">Cancel</span><span class="hljs-params">()</span> // 相当于<span class="hljs-title">CancelAt</span><span class="hljs-params">(time.Now()</span>)</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(r *Reservation)</span> <span class="hljs-title">CancelAt</span><span class="hljs-params">(now time.Time)</span></span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(r *Reservation)</span> <span class="hljs-title">Delay</span><span class="hljs-params">()</span> <span class="hljs-title">time</span>.<span class="hljs-title">Duration</span> // 相当于<span class="hljs-title">DelayFrom</span><span class="hljs-params">(time.Now()</span>)</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(r *Reservation)</span> <span class="hljs-title">DelayFrom</span><span class="hljs-params">(now time.Time)</span> <span class="hljs-title">time</span>.<span class="hljs-title">Duration</span></span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(r *Reservation)</span> <span class="hljs-title">OK</span><span class="hljs-params">()</span> <span class="hljs-title">bool</span></span></span></pre></td></tr></table></figure>
+<p>通过这5个方法可以让开发者根据业务场景进行操作，相比前两类的自动化，这样的操作显得复杂多了。通过一个小示例来学习Reserve/ReserveN：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">ReserveNDemo</span><span class="hljs-params">()</span></span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">   limter := rate.NewLimiter(<span class="hljs-number">10</span>, <span class="hljs-number">5</span>)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">   i := <span class="hljs-number">0</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">   <span class="hljs-keyword">for</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">      i++</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">      reserve := limter.ReserveN(time.Now(), <span class="hljs-number">4</span>)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-comment">// 如果为flase说明拿不到指定数量的令牌，比如需要的令牌数大于令牌桶容量的场景</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-keyword">if</span> !reserve.OK() &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">         <span class="hljs-keyword">return</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">      &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line">      ts := reserve.Delay()</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line">      time.Sleep(ts)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line">      fmt.Println(<span class="hljs-string">"执行："</span>, time.Now(),ts)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-keyword">if</span> i == <span class="hljs-number">10</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">15</span></pre></td><td class="code"><pre><span class="line">         <span class="hljs-keyword">return</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">16</span></pre></td><td class="code"><pre><span class="line">      &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">17</span></pre></td><td class="code"><pre><span class="line">   &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">18</span></pre></td><td class="code"><pre><span class="line">&#125;</span></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">执行： 2019-12-14 16:22:26.6446468 +0800 CST m&#x3D;+0.008000201 0s</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">执行： 2019-12-14 16:22:26.9466454 +0800 CST m&#x3D;+0.309998801 247.999299ms</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">执行： 2019-12-14 16:22:27.3446473 +0800 CST m&#x3D;+0.708000701 398.001399ms</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">执行： 2019-12-14 16:22:27.7456488 +0800 CST m&#x3D;+1.109002201 399.999499ms</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">执行： 2019-12-14 16:22:28.1456465 +0800 CST m&#x3D;+1.508999901 398.997999ms</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">执行： 2019-12-14 16:22:28.5456457 +0800 CST m&#x3D;+1.908999101 399.0003ms</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">执行： 2019-12-14 16:22:28.9446482 +0800 CST m&#x3D;+2.308001601 399.001099ms</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">执行： 2019-12-14 16:22:29.3446524 +0800 CST m&#x3D;+2.708005801 399.998599ms</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">执行： 2019-12-14 16:22:29.7446514 +0800 CST m&#x3D;+3.108004801 399.9944ms</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">执行： 2019-12-14 16:22:30.1446475 +0800 CST m&#x3D;+3.508000901 399.9954ms</span></pre></td></tr></table></figure>
+<p>如果在执行<code>Delay()</code>之前操作<code>Cancel()</code>那么返回的时间间隔就会为0，意味着可以立即执行操作，不进行限流。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">ReserveNDemo2</span><span class="hljs-params">()</span></span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">   limter := rate.NewLimiter(<span class="hljs-number">5</span>, <span class="hljs-number">5</span>)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">   i := <span class="hljs-number">0</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">   <span class="hljs-keyword">for</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">      i++</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">      reserve := limter.ReserveN(time.Now(), <span class="hljs-number">4</span>)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-comment">// 如果为flase说明拿不到指定数量的令牌，比如需要的令牌数大于令牌桶容量的场景</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-keyword">if</span> !reserve.OK() &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">         <span class="hljs-keyword">return</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">      &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">11</span></pre></td><td class="code"><pre><span class="line"></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">12</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-keyword">if</span> i == <span class="hljs-number">6</span> || i == <span class="hljs-number">5</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">13</span></pre></td><td class="code"><pre><span class="line">         reserve.Cancel()</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">14</span></pre></td><td class="code"><pre><span class="line">      &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">15</span></pre></td><td class="code"><pre><span class="line">      ts := reserve.Delay()</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">16</span></pre></td><td class="code"><pre><span class="line">      time.Sleep(ts)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">17</span></pre></td><td class="code"><pre><span class="line">      fmt.Println(i, <span class="hljs-string">"执行："</span>, time.Now(), ts)</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">18</span></pre></td><td class="code"><pre><span class="line">      <span class="hljs-keyword">if</span> i == <span class="hljs-number">10</span> &#123;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">19</span></pre></td><td class="code"><pre><span class="line">         <span class="hljs-keyword">return</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">20</span></pre></td><td class="code"><pre><span class="line">      &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">21</span></pre></td><td class="code"><pre><span class="line">   &#125;</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">22</span></pre></td><td class="code"><pre><span class="line">&#125;</span></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line">1 执行： 2019-12-14 16:25:45.7974857 +0800 CST m&#x3D;+0.007005901 0s</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line">2 执行： 2019-12-14 16:25:46.3985135 +0800 CST m&#x3D;+0.608033701 552.0048ms</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line">3 执行： 2019-12-14 16:25:47.1984796 +0800 CST m&#x3D;+1.407999801 798.9722ms</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line">4 执行： 2019-12-14 16:25:47.9975269 +0800 CST m&#x3D;+2.207047101 799.0061ms</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">5</span></pre></td><td class="code"><pre><span class="line">5 执行： 2019-12-14 16:25:48.7994803 +0800 CST m&#x3D;+3.009000501 799.9588ms</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">6</span></pre></td><td class="code"><pre><span class="line">6 执行： 2019-12-14 16:25:48.7994803 +0800 CST m&#x3D;+3.009000501 0s</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">7</span></pre></td><td class="code"><pre><span class="line">7 执行： 2019-12-14 16:25:48.7994803 +0800 CST m&#x3D;+3.009000501 0s</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">8</span></pre></td><td class="code"><pre><span class="line">8 执行： 2019-12-14 16:25:49.5984782 +0800 CST m&#x3D;+3.807998401 798.0054ms</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">9</span></pre></td><td class="code"><pre><span class="line">9 执行： 2019-12-14 16:25:50.3984779 +0800 CST m&#x3D;+4.607998101 799.0075ms</span></pre></td></tr><tr><td class="gutter"><pre><span class="line">10</span></pre></td><td class="code"><pre><span class="line">10 执行： 2019-12-14 16:25:51.1995131 +0800 CST m&#x3D;+5.409033301 799.0078ms</span></pre></td></tr></table></figure>
+
+<p>看到这里time/rate的限流方式已经完成，除了上述的三类限流方式，time/rate还提供了动态调整限流器参数的功能。相关API如下：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(lim *Limiter)</span> <span class="hljs-title">SetBurst</span><span class="hljs-params">(newBurst <span class="hljs-keyword">int</span>)</span> // 相当于<span class="hljs-title">SetBurstAt</span><span class="hljs-params">(time.Now()</span>, <span class="hljs-title">newBurst</span>).</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">2</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(lim *Limiter)</span> <span class="hljs-title">SetBurstAt</span><span class="hljs-params">(now time.Time, newBurst <span class="hljs-keyword">int</span>)</span>// 重设令牌桶的容量</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">3</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(lim *Limiter)</span> <span class="hljs-title">SetLimit</span><span class="hljs-params">(newLimit Limit)</span> // 相当于<span class="hljs-title">SetLimitAt</span><span class="hljs-params">(time.Now()</span>, <span class="hljs-title">newLimit</span>)</span></span></pre></td></tr><tr><td class="gutter"><pre><span class="line">4</span></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(lim *Limiter)</span> <span class="hljs-title">SetLimitAt</span><span class="hljs-params">(now time.Time, newLimit Limit)</span>// 重设放入令牌的速率</span></span></pre></td></tr></table></figure>
+<p>这四个方法可以让程序根据自身的状态动态的调整令牌桶速率和令牌桶容量。</p>
+<h2 id="结尾"><a href="#结尾" class="headerlink" title="结尾"></a>结尾</h2><p>通过上述一系列讲解，相信大家对各个限流的应用场景和优缺点也有了大致的掌握，希望在日常开发中有所帮助。限流仅仅是整个服务治理中的一个小环节，需要与多种技术结合使用，才可以更好的提升服务的稳定性的同时提高用户体验。</p>
+<h2 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h2><p><a href="https://github.com/uber-go/ratelimit" target="_blank" rel="noopener">https://github.com/uber-go/ratelimit</a><br><a href="https://en.wikipedia.org/wiki/Token_bucket" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Token_bucket</a><br><a href="https://www.cs.columbia.edu/~ruigu/papers/socc18-final100.pdf" target="_blank" rel="noopener">https://www.cs.columbia.edu/~ruigu/papers/socc18-final100.pdf</a><br><a href="https://github.com/alibaba/Sentinel" target="_blank" rel="noopener">https://github.com/alibaba/Sentinel</a><br><a href="https://tools.ietf.org/html/rfc6585" target="_blank" rel="noopener">https://tools.ietf.org/html/rfc6585</a><br><a href="https://www.yiichina.com/doc/guide/2.0/rest-rate-limiting" target="_blank" rel="noopener">https://www.yiichina.com/doc/guide/2.0/rest-rate-limiting</a><br><a href="https://github.com/RussellLuo/slidingwindow" target="_blank" rel="noopener">https://github.com/RussellLuo/slidingwindow</a><br><a href="http://zim.logdown.com/posts/300977-distributed-rate-limiter" target="_blank" rel="noopener">http://zim.logdown.com/posts/300977-distributed-rate-limiter</a><br><a href="https://www.yuque.com/clip/dev-wiki/axo1wb?language=en-us" target="_blank" rel="noopener">https://www.yuque.com/clip/dev-wiki/axo1wb?language=en-us</a>  </p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/" rel="tag">微服务</a>, <a class="has-link-grey -link" href="/tags/%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86/" rel="tag">服务治理</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/11/08/fontend/grid/">
+                <span class="level-item">Grid 布局初探</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left is-sticky">
+    
+        
+
+    <div class="card widget" id="toc">
+        <div class="card-content">
+            <div class="menu">
+                <h3 class="menu-label">
+                    目录
+                </h3>
+                <ul class="menu-list"><li>
+        <a class="is-flex" href="#限流简介">
+        <span class="has-mr-6">1</span>
+        <span>限流简介</span>
+        </a></li><li>
+        <a class="is-flex" href="#限流分类">
+        <span class="has-mr-6">2</span>
+        <span>限流分类</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#限流粒度分类">
+        <span class="has-mr-6">2.1</span>
+        <span>限流粒度分类</span>
+        </a></li><li>
+        <a class="is-flex" href="#限流对象类型分类">
+        <span class="has-mr-6">2.2</span>
+        <span>限流对象类型分类</span>
+        </a></li><li>
+        <a class="is-flex" href="#限流算法分类">
+        <span class="has-mr-6">2.3</span>
+        <span>限流算法分类</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#计数器">
+        <span class="has-mr-6">2.3.1</span>
+        <span>计数器</span>
+        </a></li><li>
+        <a class="is-flex" href="#漏桶算法">
+        <span class="has-mr-6">2.3.2</span>
+        <span>漏桶算法</span>
+        </a></li><li>
+        <a class="is-flex" href="#令牌桶算法">
+        <span class="has-mr-6">2.3.3</span>
+        <span>令牌桶算法</span>
+        </a></li><li>
+        <a class="is-flex" href="#四种策略该如何选择？">
+        <span class="has-mr-6">2.3.4</span>
+        <span>四种策略该如何选择？</span>
+        </a></li></ul></li></ul></li><li>
+        <a class="is-flex" href="#怎么做限流？">
+        <span class="has-mr-6">3</span>
+        <span>怎么做限流？</span>
+        </a></li><li>
+        <a class="is-flex" href="#go限流类库使用">
+        <span class="has-mr-6">4</span>
+        <span>go限流类库使用</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#github-com-golang-time-rate">
+        <span class="has-mr-6">4.1</span>
+        <span>github.com/golang/time/rate</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#结尾">
+        <span class="has-mr-6">5</span>
+        <span>结尾</span>
+        </a></li><li>
+        <a class="is-flex" href="#附录">
+        <span class="has-mr-6">6</span>
+        <span>附录</span>
+        </a></li></ul>
+            </div>
+        </div>
+    </div>
+
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                标签
+            </h3>
+            <div class="field is-grouped is-grouped-multiline">
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Android/">
+                        <span class="tag">Android</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Docker/">
+                        <span class="tag">Docker</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Elasticsearch/">
+                        <span class="tag">Elasticsearch</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Java/">
+                        <span class="tag">Java</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Kubernetes/">
+                        <span class="tag">Kubernetes</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/NodeJs/">
+                        <span class="tag">NodeJs</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Yarn/">
+                        <span class="tag">Yarn</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+                        <span class="tag">八里庄技术沙龙</span>
+                        <span class="tag is-grey">4</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%89%8D%E7%AB%AF/">
+                        <span class="tag">前端</span>
+                        <span class="tag is-grey">5</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+                        <span class="tag">大数据</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">
+                        <span class="tag">并发编程</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/">
+                        <span class="tag">开源项目</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/">
+                        <span class="tag">微服务</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">
+                        <span class="tag">性能优化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86/">
+                        <span class="tag">服务治理</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/">
+                        <span class="tag">组件化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/">
+                        <span class="tag">计算机资源管理</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/">
+                        <span class="tag">资源调度</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered" style="flex-shrink: 1">
+                <div>
+                    
+                    <figure class="image is-128x128 has-mb-6">
+                        <img class="" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="罗辑思维技术团队">
+                    </figure>
+                    
+                    <p class="is-size-4 is-block">
+                        罗辑思维技术团队
+                    </p>
+                    
+                    
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <a href="/archives">
+                        <p class="title has-text-weight-normal">
+                            14
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <a href="/categories">
+                        <p class="title has-text-weight-normal">
+                            5
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <a href="/tags">
+                        <p class="title has-text-weight-normal">
+                            18
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/luojilab" target="_blank">
+                关注我</a>
+        </div>
+        
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/luojilab">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Website" href="https://www.igetget.com">
+                
+                <i class="fab fa-chrome"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2019/12/16/zeroteam/You_have_to_know_the_rate_limit_of_the_series/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NjQ3NzIxNDM2.png" alt="不得不了解系列之限流">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-12-15T16:00:00.000Z">2019-12-16</time></div>
+                    <a href="/2019/12/16/zeroteam/You_have_to_know_the_rate_limit_of_the_series/" class="title has-link-black-ter is-size-6 has-text-weight-normal">不得不了解系列之限流</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%9F%BA%E7%A1%80%E6%9E%B6%E6%9E%84/">基础架构</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/11/08/fontend/grid/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTYyODQwMTc5.png" alt="Grid 布局初探">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-07T16:00:00.000Z">2019-11-08</time></div>
+                    <a href="/2019/11/08/fontend/grid/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Grid 布局初探</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/11/07/dd-technical/ddmvvm-android/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MzQ0NjI1NDI4.png" alt="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-06T16:00:00.000Z">2019-11-07</time></div>
+                    <a href="/2019/11/07/dd-technical/ddmvvm-android/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/21/dd-technical/k8s/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTc1MjEzMzgy.png" alt="【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-20T16:00:00.000Z">2019-10-21</time></div>
+                    <a href="/2019/10/21/dd-technical/k8s/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-14 期】Kubernetes在得到App的落地实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/10/16/big-data/java-concurrent/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MTIxOTYxNzc5.jpeg" alt="Java并发编程通识">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-10-15T16:00:00.000Z">2019-10-16</time></div>
+                    <a href="/2019/10/16/big-data/java-concurrent/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Java并发编程通识</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            链接
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="https://www.igetget.com/join" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">得到 App 校园招聘</span>
+                    </span>
+                    <span class="level-right">
+                        <span class="level-item tag">www.igetget.com</span>
+                    </span>
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+            <span class="level-start">
+                <span class="level-item">八里庄技术沙龙</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/">
+            <span class="level-start">
+                <span class="level-item">前端</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a><ul><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/NodeJs/">
+            <span class="level-start">
+                <span class="level-item">NodeJs</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li></ul></li><li>
+        <a class="level is-marginless" href="/categories/%E5%9F%BA%E7%A1%80%E6%9E%B6%E6%9E%84/">
+            <span class="level-start">
+                <span class="level-item">基础架构</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+            <span class="level-start">
+                <span class="level-item">大数据</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/Android/" style="font-size: 10px;">Android</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Elasticsearch/" style="font-size: 10px;">Elasticsearch</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/NodeJs/" style="font-size: 10px;">NodeJs</a> <a href="/tags/Yarn/" style="font-size: 10px;">Yarn</a> <a href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/" style="font-size: 15px;">八里庄技术沙龙</a> <a href="/tags/%E5%89%8D%E7%AB%AF/" style="font-size: 20px;">前端</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 10px;">大数据</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" style="font-size: 10px;">并发编程</a> <a href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/" style="font-size: 10px;">开源项目</a> <a href="/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/" style="font-size: 10px;">微服务</a> <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" style="font-size: 10px;">性能优化</a> <a href="/tags/%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86/" style="font-size: 10px;">服务治理</a> <a href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/" style="font-size: 10px;">组件化</a> <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" style="font-size: 10px;">计算机资源管理</a> <a href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" style="font-size: 10px;">资源调度</a>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="不得不了解系列之限流" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2019 欧二强&nbsp;
+                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+<script>
+var IcarusThemeSettings = {
+    article: {
+        highlight: {
+            clipboard: true,
+            fold: 'unfolded'
+        }
+    }
+};
+</script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+
+
+
+    
+    
+<script src="/js/animation.js"></script>
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+<script src="/js/gallery.js" defer></script>
+
+    
+    
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+    
+    
+<!-- <a id="back-to-top" title="回到顶端" href="javascript:;"> -->
+<a id="back-to-top" title="回到顶端">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+
+</html>
