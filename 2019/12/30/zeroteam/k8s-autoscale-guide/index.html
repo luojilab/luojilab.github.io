@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html  lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+
+<meta name="generator" content="Hexo 4.1.0" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<title>kubernetes 指南 -- 弹性伸缩 - 罗辑思维技术博客</title>
+
+
+    <meta name="description" content="kubernetes 指南 – 弹性伸缩0x0 pre弹性伸缩, 是云计算中的一种常用方法，通过该方法，服务器池中的计算资源量（通常根据有效的服务器数量来衡量）会根据服务器池中的负载进行动态伸缩。  本文旨在为想在 kubernetes 中使用弹性伸缩功能的读者解释相关概念，并制定一条较为清晰的路线图。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kubernetes 指南 -- 弹性伸缩">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2019&#x2F;12&#x2F;30&#x2F;zeroteam&#x2F;k8s-autoscale-guide&#x2F;index.html">
+<meta property="og:site_name" content="罗辑思维技术博客">
+<meta property="og:description" content="kubernetes 指南 – 弹性伸缩0x0 pre弹性伸缩, 是云计算中的一种常用方法，通过该方法，服务器池中的计算资源量（通常根据有效的服务器数量来衡量）会根据服务器池中的负载进行动态伸缩。  本文旨在为想在 kubernetes 中使用弹性伸缩功能的读者解释相关概念，并制定一条较为清晰的路线图。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https:&#x2F;&#x2F;piccdn.luojilab.com&#x2F;fe-oss&#x2F;default&#x2F;autoscale-thumbnail2.png">
+<meta property="article:published_time" content="2019-12-29T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-03-20T04:34:55.026Z">
+<meta property="article:tag" content="资源调度">
+<meta property="article:tag" content="Kubernetes">
+<meta property="article:tag" content="Docker">
+<meta property="article:tag" content="服务治理">
+<meta property="article:tag" content="云原生">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https:&#x2F;&#x2F;piccdn.luojilab.com&#x2F;fe-oss&#x2F;default&#x2F;autoscale-thumbnail2.png">
+
+
+
+
+
+
+
+<link rel="icon" href="/images/favicon.svg">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+<style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+    
+    
+    
+    
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+    
+    
+    
+    
+    
+    
+    
+    <link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="kubernetes 指南 -- 弹性伸缩" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">首页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/tags">标签</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                
+
+                <!-- post 页面右侧官宽度 66.7% -->
+                
+                <div style="width: 66.7%!important;" class="column is-8-tablet is-8-desktop is-6-widescreen has-order-2 column-main">
+<div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/autoscale-thumbnail2.png" alt="kubernetes 指南 -- 弹性伸缩">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                
+                <div class="level-item">刘鹏</div>
+                
+                <time class="level-item has-text-grey" datetime="2019-12-29T16:00:00.000Z">2019-12-30</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/%E5%9F%BA%E7%A1%80%E6%9E%B6%E6%9E%84/">基础架构</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    1 小时 读完 (大约 7439 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                kubernetes 指南 -- 弹性伸缩
+            
+        </h1>
+        <div class="content">
+            <h1 id="kubernetes-指南-–-弹性伸缩"><a href="#kubernetes-指南-–-弹性伸缩" class="headerlink" title="kubernetes 指南 – 弹性伸缩"></a>kubernetes 指南 – 弹性伸缩</h1><h2 id="0x0-pre"><a href="#0x0-pre" class="headerlink" title="0x0 pre"></a>0x0 pre</h2><p><a href="https://zh.wikipedia.org/wiki/%E5%BC%B9%E6%80%A7%E4%BC%B8%E7%BC%A9" target="_blank" rel="noopener">弹性伸缩</a>, 是云计算中的一种常用方法，通过该方法，服务器池中的计算资源量（通常根据有效的服务器数量来衡量）会根据服务器池中的负载进行动态伸缩。 </p>
+<p>本文旨在为想在 kubernetes 中使用弹性伸缩功能<br>的读者解释相关概念，并制定一条较为清晰的路线图。 </p>
+<a id="more"></a>
+
+<h2 id="0x1-autoscaling"><a href="#0x1-autoscaling" class="headerlink" title="0x1 autoscaling"></a>0x1 autoscaling</h2><p>在了解 k8s 弹性伸缩这个课题之前，我们先从更宏观的角度，了解一下弹性伸缩相关概念。</p>
+<h3 id="目的"><a href="#目的" class="headerlink" title="目的"></a>目的</h3><p>我们做工程都是结果导向的，就是说，我们做弹性伸缩，不是因为它看上去很酷，不是为了做弹性伸缩而做。<br>而是从公司的实际问题出发，为了解决什么问题，以及投入产出比是否合理，才决定是否要做弹性伸缩，以及怎么做。<br>一般来讲，弹性伸缩主要用来解决两个问题：</p>
+<ul>
+<li>应对突发流量</li>
+<li>节省资源</li>
+</ul>
+<p>应对突发流量。这点很好理解，当系统由于外界因素（比如 XXX 突然结婚了， XXX 突然离婚了等突发的热门话题），<br>导致系统负载激增，原有的配置已无法满足需求，需要增加系统配置。这种增加可能是自动的，可能是需要手工调整的，<br>甚至是需要去购买机器，重启服务等对服务比较不友好的行为。具体进行何种操作，需要以及目前公司的弹性伸缩级别来制定<br>相应的计划。关于弹性伸缩的级别，我们将在稍后说明。</p>
+<p>节省资源。绝大多数情况下，我们不可能让我们的工作负载跑满服务器（即便能跑满，为了服务稳定性，我们也不大敢这么做）。<br>在不损失服务稳定性的大前提下，尽可能地提高资源利用率，一直是各个弹性伸缩方案不懈的目标。减少单个服务资源占用，<br>通过合理调度资源减少服务器数量，及时增减服务数量等手段，都能直接或间接的达到节省资源的目的。</p>
+<p>针对以上两种目的，我们可能设计出完全不同的弹性伸缩方案。<br>例如，如果我们的需求是 <strong>在流量激增时能够在数分钟内为指定服务扩容，保证服务稳定可用</strong>，那么我们可能仅仅需要<br>把服务迁移到容器环境中，并配置一个延迟较低的监控报警系统，在出问题时能够及时通知到运维人员，然后手动为服务扩容即可；<br>如果服务器成本在公司所有成本中已经占了很大的比重，要在不影响业务的情况下尽可能地减少服务器开支，秒级伸缩，则我们需要<br>从公司后端服务各个方面好好设计一番了。</p>
+<h3 id="场景"><a href="#场景" class="headerlink" title="场景"></a>场景</h3><h4 id="节点和服务"><a href="#节点和服务" class="headerlink" title="节点和服务"></a>节点和服务</h4><p>节点是承载工作负载的单元，是集群中提供容器运行环境的一台机器（物理机或虚拟机）。<br>服务是具体的工作负载，具体在 kubernetes 中，就是 pod 以及 pod 所包含的容器。<br>kubernetes 上的弹性伸缩会在节点和服务两个粒度进行。</p>
+<p>两个粒度之间会相互影响。例如，应对突发流量时，如果触发了服务粒度的扩容操作，就会占用部分节点资源，<br>如果碰巧扩容到一半时，集群所有资源都被用完了，那么此时只有节点也能进行自动扩容才能完成服务的扩容，<br>否则会导致服务由于没有找到足够的资源而扩容失败。当然，现实情况中，我们一般不会等到集群资源完全用完<br>时才去触发节点扩容。一般会在资源超过某个特定阈值（90-95%）时，就会触发扩容。</p>
+<p>同样，在使用缩容来节省资源时，只有将负载低的服务缩容后，才能空闲出一批利用率较低的节点，此时节点弹性伸缩器检测到<br>某些节点利用率低，关闭这些节点，或是从云厂商取消续订这些节点，才能达到节省资源的最终目的。</p>
+<h4 id="垂直伸缩与水平伸缩"><a href="#垂直伸缩与水平伸缩" class="headerlink" title="垂直伸缩与水平伸缩"></a>垂直伸缩与水平伸缩</h4><p><strong>垂直(Vertical)伸缩</strong>：调整节点或服务的资源配额。</p>
+<p><strong>水平(Horizontal)伸缩</strong>: 调整节点或服务的数量。</p>
+<h4 id="弹性伸缩的级别。"><a href="#弹性伸缩的级别。" class="headerlink" title="弹性伸缩的级别。"></a>弹性伸缩的级别。</h4><p>借鉴业界对自动驾驶的分级规则，现定义服务的弹性伸缩级别如下：</p>
+<table>
+<thead>
+<tr>
+<th align="left">级别</th>
+<th>说明</th>
+<th>扩展</th>
+<th>收缩</th>
+<th>业务是否感知</th>
+<th>操作时间</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">0</td>
+<td>系统不支持伸缩</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td align="left">1</td>
+<td>运维手动添加机器</td>
+<td>人工</td>
+<td>人工</td>
+<td>是</td>
+<td>x 小时</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td>管理系统中修改配置</td>
+<td>人工</td>
+<td>人工</td>
+<td>否</td>
+<td>x 分钟</td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td>自动扩容</td>
+<td>自动</td>
+<td>人工</td>
+<td>否</td>
+<td>扩展 x 秒，收缩 x 分钟</td>
+</tr>
+<tr>
+<td align="left">4</td>
+<td>自动伸缩</td>
+<td>自动</td>
+<td>自动</td>
+<td>否</td>
+<td>x 秒</td>
+</tr>
+<tr>
+<td align="left">5</td>
+<td>按计划伸缩</td>
+<td>自动</td>
+<td>自动</td>
+<td>否</td>
+<td>x 秒</td>
+</tr>
+<tr>
+<td align="left">6</td>
+<td>基于预测的伸缩</td>
+<td>自动</td>
+<td>自动</td>
+<td>否</td>
+<td>x 秒</td>
+</tr>
+</tbody></table>
+<p><strong>level 0:</strong> 系统还处在比较原始的阶段，服务不支持任何形式的扩容缩容。</p>
+<p><strong>level 1:</strong>系统直接跑在自己维护的虚拟机或物理机上，能够通过人工增加减少机器数量来实现扩缩容。<br>此种方式的通常方案是在服务上层搭建一个负载均衡，然后在增加、减少机器时使负载均衡感知。<br>这种方式扩缩容的时间通常较长，几分钟到几小时不等。</p>
+<p><strong>level 2:</strong></p>
+<ul>
+<li>服务已经容器化</li>
+<li>有一套标准的容器调度管理平台(mesos/kubernetes)</li>
+<li>有一套完整的监控数据(prometheus/zabbix/open-falcon/ELK)</li>
+</ul>
+<p>由于容器的启动速度比虚拟机和物理机要快很多，所以容器化后，可以将扩容速度提高很多倍，能够达到秒级至分钟级。</p>
+<p><strong>level 3:</strong><br>由于 level 2 中我们已经有个各个维度的监控数据，在此基础之上，可以做一些自动化策略来减少人工操作的时间，<br>能够将扩容速度稳定在秒级。</p>
+<p><strong>level 4:</strong><br>在弹性伸缩的级别中，自动缩容的等级(4)要比自动扩容(3)高一级，主要从两个方面考虑:</p>
+<ol>
+<li>从公司发展角度来看，肯定是<strong>先跑起来</strong> –&gt; <strong>抗住大流量</strong> –&gt; <strong>精细化控制成本</strong>。<br>如果温饱问题都还没有解决， 公司生死存亡的问题都还没解决， 就去考虑节约成本，显然是没有抓对发展的大方向。</li>
+<li>从实现的技术难度来讲，缩容要考虑的细节要多一些。比如扩容时由于都是添加资源和服务，较容易做到业务无感知。<br>但是在缩容时，如果想做到业务无感知，可能需要结合网关、负载均衡、部署策略、服务优雅关闭、服务发现、<br>容器生性周期管理等多方面的知识才能实现。</li>
+</ol>
+<p>此外，在制定弹性伸缩策略时，业界通常会采用 <strong>激进的扩容，谨慎的缩容</strong> 的大方针来最大限度地保障服务的稳定性。</p>
+<p><strong>level 5:</strong><br>level 3 和 level 4 虽说已经实现了秒级的弹性伸缩，但是他们都是<strong>被动式</strong>的，换句话说，只能在事情发生后，<br>再进行扩缩容。这样做可能会导致出现少量的请求超时或请求出错。一种更优雅的方案是在出现问题前，预先准备好充足的资源，<br>避免问题的发生，前置性地进行伸缩。</p>
+<p>level 5 周期性的弹性伸缩是指基于对历史数据和公司、服务业务的资源用量波峰波谷的周期性规律的总结，定时对服务和集群<br>规模进行扩缩容。</p>
+<p>例如如果公司主要业务是一款公交出行类软件，那么很显然每天的早晚上班期间是公司业务的高峰，且流量是闲时流量的数倍。该公司<br>可以指定一个定时伸缩策略，每天早晨 5 点将集群规模扩大 x 倍，xx 业务规模扩大 y 倍，11 点再缩容至原规模，下午 4 点再进行扩容，<br>以此类推。level 5 的弹性伸缩的实现，依赖于 level 3 和 level 4 对基础设施和中间件的优化与改造，只有在能保证扩缩容的过程中<br>不会对业务产生影响，才可以频繁地进行扩缩容。</p>
+<p><strong>level 6:</strong><br>level 5 的周期性伸缩用一种简单地预测性的方式很好的解决了公司常规业务的资源使用率的问题。但由于仅仅采集了时间维度对系统资源使用<br>情况影响的数据，其调整方式较为单一，无法应对突发情况。<br>通常情况下，在系统出现高流量，高负载前，都会有一些前置性信号。这些信号包括但不限于以下方面：</p>
+<ul>
+<li>基于以往压测数据和以往运营活动数据对即将开展的营销活动的流量的预测</li>
+<li>利用社会工程学手段对社会上即将发生的热点事件和正在发生的热点事件的走向的预测</li>
+<li>利用机器学习对系统响应时间、流量走势、系统负载走势等多维度海量监控数据的分析对即将到来的高流量和高负载的预测(例如 netflx 的预测分析引擎Scryer)</li>
+</ul>
+<p>技术手段能够解决许多问题，但是并不能解决所有问题。在解决系统性问题时，尤其是较复杂的系统问题时，我们不能把思维完全限制在技术领域，<br>同时结合多种手段，可以使许多看似无法用技术手段解决的问题迎刃而解。</p>
+<p>当然，随着机器学习技术的兴起，一些以往无法用传统方式解决的技术问题，也变得可解。只不过需要专业人士投入较多的人力物力，在使用<br>这种方式时，要在充分考虑投入产出比后，再做决定。</p>
+<p>Netflix发现，对于部分基础架构和特定的工作负载，其预测分析引擎 Scryer 比传统的被动自动缩放方法提供了更好的结果。它特别适合以下场景：</p>
+<ul>
+<li>在不久的将来识别需求的巨大峰值，并提前一点准备好产能</li>
+<li>处理大规模中断，例如整个可用区和区域的故障</li>
+<li>处理可变的流量模式，根据一天中不同时间的典型需求水平和变化率，在横向扩展或纵向扩展速率上提供更大的灵活性</li>
+</ul>
+<p><strong>任何系统和工程都不是一蹴而就的，只有当基础设施达到一定完善程度后，再逐级实现弹性伸缩，才是一个比较可行的路线。<br>本文假定目前系统已经达到了2 级的弹性伸缩。以下主要讲述在此基础上，实现更高级的弹性伸缩的相关知识点。</strong></p>
+<h2 id="0x2-autoscaling-in-kubernetes"><a href="#0x2-autoscaling-in-kubernetes" class="headerlink" title="0x2 autoscaling in kubernetes"></a>0x2 autoscaling in kubernetes</h2><p>弹性伸缩这种功能，不是很多系统都已经实现了，我们直接用就行了吗，为什么还需要个指南呢。<br>因为。。。。我们先来看看都有哪些相关知识点吧。。。</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NzY5MzI3ODk5.png" alt="wordcloud"></p>
+<p>弹性伸缩涉及到各种软硬件，各色调度平台，策略和系统，其本身就是一个较复杂的课题。此外，kubernetes 不单单是一个容器调度平台，而是一个活跃，庞大的生态系统。<br><strong>kubernetes 弹性伸缩</strong>这个课题涉及了诸多知识点，主要如下：</p>
+<pre><code>- 水平(Horizontal)伸缩
+- 垂直(Vertical)伸缩
+- 定时(Scheduled)伸缩
+- 预测(Predictive)性伸缩
+- 服务画像
+- node
+- service
+- CA
+- cloudprovider
+- VPA
+- HPA
+- HPA controller
+- metric
+- metric server
+- heapster
+- metric state
+- prometheus
+- CRD
+- custom metric api
+- prometheus adapter
+- cronhpa controller
+- cloud controller manager</code></pre><p>在刚开始调研这个课题的时候，一上来看到这么多名词和术语，肯定会一脸懵逼的。终于，<br>在知识的海洋中遨游了好一阵后，终于了摸索出一条路，爬上岸来。<br>接下来我们开始逐步详细讲解并绘制路线图。</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NzY5MzI3OTI3.png" alt="map">   </p>
+<h3 id="service-autoscaling"><a href="#service-autoscaling" class="headerlink" title="service autoscaling"></a>service autoscaling</h3><p>首先，按照伸缩粒度，分为服务伸缩和节点伸缩。我们先来看服务伸缩。<br>k8s 默认提供了多个服务粒度的弹性伸缩组件。主要有 VPA， addon resizer 和 HPA。<br>此外，各大云厂商也积极贡献提供了多种伸缩组件，例如阿里云提供的 cronHPA。<br>以下我们分别详细说明。</p>
+<p>在服务粒度的伸缩中，依据执行触发时机不同，可分为立即执行，定时执行和预测性执行。<br>先来看立即执行。</p>
+<p>立即执行又细分为垂直伸缩和水平伸缩。</p>
+<h4 id="垂直伸缩"><a href="#垂直伸缩" class="headerlink" title="垂直伸缩"></a>垂直伸缩</h4><p>k8s 中的垂直伸缩一般是指调整 Pod 的内存和 CPU 配额(resource limit 和 request)。<br>k8s 官方 <a href="https://github.com/kubernetes/autoscaler" target="_blank" rel="noopener">autoscaler</a> 包中有两个类型的垂直伸缩组件：<br>VPA(vertical pod autoscaler) 和 addon resizer。</p>
+<p><strong>addon resizer</strong>可以根据集群节点数量来动态地调整某个其他 deployment 中的 pod 的配额。<br>addon resizer 周期性地查看集群节点数量，然后计算出监控的 pod 需要分配的内存和 CPU，如果 pod 的实际 pod 配额<br>和所需配额超过某个阈值，则会修改 deployment 并触发生成新的 pod。addon resizer 的这种特性决定了它用来伸缩与集群<br>规模密切相关的服务。一般， addon resizer 用来伸缩部署在集群内的 heapster， metrics-server， kube-state-metrics<br>等监控组件。</p>
+<p><strong>VPA</strong>的应用范围要广一些。设置 VPA 后，它能够自动为 pod 设定 request 和 limit 配额值，然后动态地将 pod 调度<br>到合适的节点上去。</p>
+<p>VPA 在 k8s 中定义类型为 VerticalPodAutoscaler 的 <a href="https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/" target="_blank" rel="noopener">CRD</a>，<br>为每个需要开启垂直弹性伸缩功能的 deployment 创建一个 custom resource，然后 VPA 会定期查看对应 pod 的资源使用情况，结合历史数据，<br>自动调整 pod 的配额。</p>
+<p>VPA controller 由三部分组成。</p>
+<ul>
+<li>Recommender：它监视当前和过去的资源消耗，并基于此提供容器的cpu和内存请求的推荐值。</li>
+<li>Updater：它检查哪个托管的pod设置了正确的资源，如果没有，则杀死它们，以便它们的控制器可以用更新后的请求重新创建它们。</li>
+<li>Admission Plugin：它在新pod上设置正确的资源请求(由于Updater的活动，它们的控制器只是创建或重新创建了这些请求)。</li>
+</ul>
+<p>使用 VPA 监控 deployment 时，它并不会去改变 deployment 的配置，而是使用 admission plugin 以类似 pre hook 的方式<br>在创建 pod 时动态为其配置配额值。</p>
+<p>使用 VPA 之前需要注意以下问题：</p>
+<ul>
+<li>VPA 默认会从 metrics server 中采集历史数据，因此使用 VPA 之前，需要配置好 metrics server。VPA 也支持从 prometheus 中<br>采集历史数据，不过需要额外的配置。关于 metrics server、state metrics、prometheus 等监控服务的异同，我们将在 <strong>数据监控</strong>一节中<br>详细介绍</li>
+<li>VPA 是在伸缩调整过程中，是通过重启 pod 来使调整生效的，因此已经公司基础架构不同，可能会引起服务闪断，需要具体分析服务是否可接受</li>
+<li>使用 VPA 扩容有上限，具体受 pod 所在宿主机影响。为 pod 分配的资源无法超过宿主机的大小。如果 recommender 计算出的 pod 所需资源<br>超过节点可用资源，将导致 pod 一直 pending。这点可与通过与 cluster autoscaler 共同使用来部分解决。</li>
+<li>VPA 目前不应与基于内存和 CPU 监控的水平Pod自动调度器(HPA)一起使用，否则可能产生预期外的行为。</li>
+</ul>
+<h4 id="水平伸缩"><a href="#水平伸缩" class="headerlink" title="水平伸缩"></a>水平伸缩</h4><p>Horizontal Pod Autoscaler 是 k8s 内置的水平伸缩控制器。 它根据观察到的CPU使用率（或使用自定义指标支持，基于某些其他应用程序提供的指标）<br>自动缩放 replication 控制器，deployment，副本集或状态集中的 pod 数量。 需要注意的是，水平窗格自动缩放不适用于无法缩放的对象，<br>例如DaemonSets。</p>
+<p>HPA 实现为Kubernetes API资源和控制器。资源决定控制器的行为。控制器定期（默认为 15 秒）调整复制控制器或部署中的副本数量，<br>以使所观察到的平均CPU利用率与用户指定的目标相匹配。</p>
+<p>与 VPA 仅支持从 metrics server 中采集 CPU 和内存数据不同的是，HPA 支持多种数据维度和数据采集方式:</p>
+<ul>
+<li>从 heapster 中采集 CPU 和内存数据(自 kubernetes 1.11 起废除)</li>
+<li>遵循特定格式记录在 annotation 中的应用自定义 metrics(自 kubernetes 1.6 起废除)</li>
+<li>使用 metrics API 采集 metric server 中的数据</li>
+<li>通过 custom metrics adapter 将 prometheus 等第三方中的数据采集提供给 custom metrics API 使用。</li>
+</ul>
+<p>和 VPA 一样，使用 HPA 一般需要先搭建 metrics server，具体方法可参考 kubernetes 官方指南。</p>
+<p>在新版本(kubernetes 1.6 以后)的 metrics API 中，引入聚合层(aggregation layer)，为应用查询 metrics server<br>内部的数据和第三方数据提供了一致的抽象。第三方监控数据只需自己实现相应的 adapter，并在 metrcis API 中为其<br>监控的 metric 注册相应的 custom metrics API 即可。</p>
+<p>下图展示了使用 HPA 根据 metrics server 和 prometheus 中的数据进行弹性伸缩的过程。</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/k8s-hpa.png" alt="hpa-data-flow"></p>
+<h4 id="定时伸缩"><a href="#定时伸缩" class="headerlink" title="定时伸缩"></a>定时伸缩</h4><p>kubernetes 官方并没有提供定时伸缩相关的组件，但是其原理并不难，只需按照设定的时间调用 kubernetes 的 API 即可。<br><a href="https://github.com/AliyunContainerService/kubernetes-cronhpa-controlle" target="_blank" rel="noopener">kubernetes-cronhpa-controller</a> 是阿里云工程师基于 go-cron<br> 开源的定时伸缩组件。</p>
+<h4 id="预测性伸缩"><a href="#预测性伸缩" class="headerlink" title="预测性伸缩"></a>预测性伸缩</h4><p>目前暂无成熟的技术方案。</p>
+<h3 id="node-autoscaling"><a href="#node-autoscaling" class="headerlink" title="node autoscaling"></a>node autoscaling</h3><h4 id="垂直伸缩-1"><a href="#垂直伸缩-1" class="headerlink" title="垂直伸缩"></a>垂直伸缩</h4><p>与 kubernetes 本身关系不大，其功能主要取决于云厂商。例如，厂商是否支持主机的升降配，以及升降配过程中是否<br>需要重启主机等。如果需要重启主机，那么在进行伸缩之前，我们需要先把节点上的 pod 驱逐到其他主机。<br>但是如果我们是由于机器资源不够用而扩容的话，这样会加剧资源不够用的情况，造成更大的 pending 状态的 pod。<br>因此，如果如果云厂商不支持不重启就能扩容的话，我们不建议采用这种方式进行节点扩容。</p>
+<h4 id="水平伸缩-1"><a href="#水平伸缩-1" class="headerlink" title="水平伸缩"></a>水平伸缩</h4><p>CA(Cluster Autoscaler) 是 kubernetes 官方的节点水平伸缩组件。<br>它可以在下列条件之一为真时自动调整Kubernetes集群的大小：</p>
+<ul>
+<li>集群中有 pod 由于资源不足而一直 pending</li>
+<li>集群中有些节点在很长一段时间内没有得到充分利用，且其上的 pod 可以被调度到其他节点上。</li>
+</ul>
+<p>cluster autoscaler 虽然是 kubernetes 官方标准，但是由于其去云厂商依赖较深，因此具体使用方法，功能以及限制以<br>云厂商具体实现为准。目前支持以下云厂商: Google Cloud Platform, AWS, AliCloud, Azure, BaiduCloud。</p>
+<p>以 AliCloud 为例，默认单个用户按量付费实例的配额是30台，单个VPC的路由表限额是50条；且每个可用区的同一类型的实例<br>库存容量波动很大，如果短时间内大量购买同一区同一配置的实例，很容易出现库存不足导致扩容失败。<br>建议在伸缩组中配置多种同规格的实例类型，提高节点伸缩成功率。</p>
+<p>实际使用中，一般为 node 建立多个 node group，专门配置几个 group 来启用弹性伸缩应对突发流量进行扩缩容。<br>主要的 group 并不进行扩缩容，来避免扩缩容导致对大范围的服务的影响。</p>
+<p>此外，节点水平伸缩能否成功实施，与调度策略密切相关。kubernetes 在为 pod 选择可分配节点时，<br>是采用 LeastRequestedPriority 策略，简单来说就是就是尽可能把资源打散，把 pod 分配到资源利用率低的节点。<br>这样会倒是有一批利用率较低，但未到缩容阈值的节点，因此会导致无法成功缩容，资源利用率低。因此实际使用时，需要<br>调整 kubernetes 调度策略，来达到最优的结果。</p>
+<h4 id="定时伸缩-1"><a href="#定时伸缩-1" class="headerlink" title="定时伸缩"></a>定时伸缩</h4><p>目前暂无成熟的技术方案。</p>
+<h3 id="数据监控"><a href="#数据监控" class="headerlink" title="数据监控"></a>数据监控</h3><h4 id="heapster"><a href="#heapster" class="headerlink" title="heapster"></a>heapster</h4><p>heapster 是一个数据收集器，从每个 node 上采集数据并进行汇总，然后转存到第三方工具中，<br>它本身并不生成监控数据，也不负责存储。</p>
+<p>目前 heapster 已经被逐渐废弃(从 kubernetes 1.11 开始)，不再维护和推荐使用。</p>
+<p>heapster 曾负责以下功能：</p>
+<ul>
+<li>监控节点、pod 的 cpu 内存基础数据。这部分数据采自每个节点的 cadvisor(新版本的 kubernetes 已集成到 kubelet)。</li>
+<li>通用的数据项目监控。</li>
+<li>kubernetes 事件信号转发。 heapster 调用 api-server 并将集群的 event 转发处理。</li>
+</ul>
+<p>目前这三个功能可依次由 metrics server、pormetheus operator、eventrouter 等独立的组件替换。</p>
+<h4 id="metrics-server"><a href="#metrics-server" class="headerlink" title="metrics server"></a>metrics server</h4><p>metrics server 是 heapster 的继承者，kubernetes 1.8 开始，集群内监控数据可以通过 metrics API<br>从监控数据聚合器 metrics server 中获取。<br>Metrics API相比于之前的监控采集方式(hepaster)是一种新的思路，官方希望核心指标的监控应该是稳定的，版本可控的，<br>可以直接被用户访问(kubectl top)，也可以由组件通过 API 调用。由于监控数据量巨大，不适宜像其他资源一样存到 etcd 中，<br>因此 Metrics server 将数据存在内存中，只提供实时数据的查询，不提供历史数据查询功能。<br>除了可以通过 metrics API 查询内部监控数据外，metrics server 提供了灵感的扩展方式。</p>
+<p>系统可以为自定义监控数据实现对应的 adapter， 用户就可以以 custom metrics API 的方式查询数据，保持与查询原生数据一致的体验。</p>
+<p>通常， metrics server 的数据可作为各个维度弹性伸缩的数据指标。</p>
+<h4 id="state-metrics"><a href="#state-metrics" class="headerlink" title="state metrics"></a>state metrics</h4><p>kube-state-metrics 侦听 Kubernetes API服务器并生成关于对象状态的指标。它并不关注Kubernetes组件的健康状况，而是关注内部各种对象<br>(如 deployment、node 和 pod)的健康状况。<br>我们可以直接访问 Kube-state-metrics 的 /metrics HTTP 接口来查看监控数据。 这些数据用来提供给 prometheus 获取其它一些第三方程序<br>抓取使用。</p>
+<p>关于 state metrics 和 metrics server 的差异：</p>
+<pre><code>metrics server 仅采集 kubernetes 中的 CPU、内存等核心指标，它周期性地调用所有节点的 kubelet
+提供的 summary API。这些数据是按 pod、node 维度聚合的，存储在内存中，并且以 metrics API
+的格式提供。它仅存储最新数据，并且不负责将这些数据导出提供给第三方使用。
+
+kube state metrics 主要关注于从 deployment, replica set, stateful set 等 kubernetes
+对象生成新的监控数据，将原始数据重新聚合、呈现。它在内存中存储整个 kubernetes 集群的状态快照，并在此之上持续生成新的监控数据。同样，
+它也负责将这些数据导出提供给第三方使用。</code></pre><h4 id="prometheus"><a href="#prometheus" class="headerlink" title="prometheus"></a>prometheus</h4><p>用于存储、聚合、查询监控数据的时序型数据库。</p>
+<h2 id="0x3-方案对比"><a href="#0x3-方案对比" class="headerlink" title="0x3 方案对比"></a>0x3 方案对比</h2><p>下面对上述方案从以下几方面做统一比对：</p>
+<ul>
+<li>稳定性：在伸缩时尽可能保证服务稳定性是大前提。</li>
+<li>接入成本：实现弹性伸缩的一个重要目的就是节省成本，如果接入成本太高就得不偿失了。</li>
+<li>灵活性：在落地到具体公司时，每个公司的开发语言、框架、服务类型多种多样，不同服务对弹性伸缩的要求不尽相同。</li>
+<li>数据源丰富性：每个成熟的 IT 公司都有一套自己的监控报警体系，收集了诸多维度的数据，如果能更好的利用这些数据，将能够实现更精准的弹性伸缩。</li>
+<li>混合云支持：随着公司规模扩大，云服务费用日益增高，越来越多的公司开始组建多机房，多云服务供应商组建的混合云。</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>方案名</th>
+<th>功能简述</th>
+<th>优点</th>
+<th>缺点</th>
+<th>混合云支持</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Horizontal Pod Autoscaler</td>
+<td>根据服务负载调整服务实例数</td>
+<td>稳定性：扩容是通过增加实例数来实现，对原有容器无影响，因此稳定性较好。  接入成本：k8s 原生支持，只需配置 k8s 资源即可实现基本功能。  数据源丰富性：有一定的灵活性，可以直接采集 kubelet 数据，也可基于 prometheus 采集的自定义数据。</td>
+<td>灵活性：判定机制较简单，一次命中即触发伸缩，无法配置次数阈值，无法解决毛刺问题；无法自定义触发动作（如通知等）</td>
+<td>否</td>
+</tr>
+<tr>
+<td>Vertical Pod Autoscaler</td>
+<td>根据服务负载调整 pod 的资源分配数</td>
+<td>接入成本：k8s 原生支持，只需配置 k8s 资源即可实现基本功能。  数据源丰富性：有一定的灵活性，可以直接采集 kubelet 数据，也可基于 prometheus 采集的自定义数据。</td>
+<td>稳定性：伸缩时会重新发版，触发过程可能会加剧请求超时现象，可能引发宕机时间。  灵活性：判定机制较简单，一次命中即触发伸缩，无法配置次数阈值，无法解决毛刺问题；无法自定义触发动作（如通知等）。</td>
+<td>否</td>
+</tr>
+<tr>
+<td>Cluster Autoscaler</td>
+<td>根据 pod 和节点状态增减集群节点数</td>
+<td>接入成本：成熟开源方案，且官方适配了阿里云，配置即可。  稳定性：方案较成熟。</td>
+<td>数据源：不支持自定义。  灵活性：较不灵活。</td>
+<td>否</td>
+</tr>
+<tr>
+<td>kubernetes-cronhpa-controller</td>
+<td>阿里云基于 go-cron 开源的定时伸缩服务组件。</td>
+<td>稳定性：目前该功能已上线阿里云 k8s 服务，较稳定。  接入成本：较低，配置即可。</td>
+<td>灵活性：无法支持伸缩前校验，伸缩后通知等自定义操作。</td>
+<td>否</td>
+</tr>
+</tbody></table>
+<h2 id="0x4-其他"><a href="#0x4-其他" class="headerlink" title="0x4 其他"></a>0x4 其他</h2><p>最后分享一张我们分析弹性伸缩时用到的思维导图:</p>
+<p><img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NzY5MzI3OTUy.png" alt="mindx"></p>
+<p>好了，弹性伸缩相关路径我们都已经基本熟悉了，我们又可以踏上征程，<br>去探索<del>维斯特洛大陆</del>(kubernetes)其他的版块了。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Docker/" rel="tag">Docker</a>, <a class="has-link-grey -link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a>, <a class="has-link-grey -link" href="/tags/%E4%BA%91%E5%8E%9F%E7%94%9F/" rel="tag">云原生</a>, <a class="has-link-grey -link" href="/tags/%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86/" rel="tag">服务治理</a>, <a class="has-link-grey -link" href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" rel="tag">资源调度</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/01/16/dd-technical/the-evolution-of-iget-hybrid-architecture/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">【八里庄技术沙龙 - 18期】得到 hybrid 架构的演进之路</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/12/16/zeroteam/You_have_to_know_the_rate_limit_of_the_series/">
+                <span class="level-item">不得不了解系列之限流</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+                
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left is-sticky">
+    
+        
+
+    <div class="card widget" id="toc">
+        <div class="card-content">
+            <div class="menu">
+                <h3 class="menu-label">
+                    目录
+                </h3>
+                <ul class="menu-list"><li>
+        <a class="is-flex" href="#kubernetes-指南-–-弹性伸缩">
+        <span class="has-mr-6">1</span>
+        <span>kubernetes 指南 – 弹性伸缩</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#0x0-pre">
+        <span class="has-mr-6">1.1</span>
+        <span>0x0 pre</span>
+        </a></li><li>
+        <a class="is-flex" href="#0x1-autoscaling">
+        <span class="has-mr-6">1.2</span>
+        <span>0x1 autoscaling</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#目的">
+        <span class="has-mr-6">1.2.1</span>
+        <span>目的</span>
+        </a></li><li>
+        <a class="is-flex" href="#场景">
+        <span class="has-mr-6">1.2.2</span>
+        <span>场景</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#0x2-autoscaling-in-kubernetes">
+        <span class="has-mr-6">1.3</span>
+        <span>0x2 autoscaling in kubernetes</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#service-autoscaling">
+        <span class="has-mr-6">1.3.1</span>
+        <span>service autoscaling</span>
+        </a></li><li>
+        <a class="is-flex" href="#node-autoscaling">
+        <span class="has-mr-6">1.3.2</span>
+        <span>node autoscaling</span>
+        </a></li><li>
+        <a class="is-flex" href="#数据监控">
+        <span class="has-mr-6">1.3.3</span>
+        <span>数据监控</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#0x3-方案对比">
+        <span class="has-mr-6">1.4</span>
+        <span>0x3 方案对比</span>
+        </a></li><li>
+        <a class="is-flex" href="#0x4-其他">
+        <span class="has-mr-6">1.5</span>
+        <span>0x4 其他</span>
+        </a></li></ul></li></ul>
+            </div>
+        </div>
+    </div>
+
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                标签
+            </h3>
+            <div class="field is-grouped is-grouped-multiline">
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Android/">
+                        <span class="tag">Android</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Docker/">
+                        <span class="tag">Docker</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Elasticsearch/">
+                        <span class="tag">Elasticsearch</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Hybrid/">
+                        <span class="tag">Hybrid</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Java/">
+                        <span class="tag">Java</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Kubernetes/">
+                        <span class="tag">Kubernetes</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/NodeJs/">
+                        <span class="tag">NodeJs</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Nodejs/">
+                        <span class="tag">Nodejs</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Yarn/">
+                        <span class="tag">Yarn</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E4%BA%91%E5%8E%9F%E7%94%9F/">
+                        <span class="tag">云原生</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+                        <span class="tag">八里庄技术沙龙</span>
+                        <span class="tag is-grey">5</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%89%8D%E7%AB%AF/">
+                        <span class="tag">前端</span>
+                        <span class="tag is-grey">6</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+                        <span class="tag">大数据</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">
+                        <span class="tag">并发编程</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/">
+                        <span class="tag">开源项目</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/">
+                        <span class="tag">微服务</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">
+                        <span class="tag">性能优化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86/">
+                        <span class="tag">服务治理</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/">
+                        <span class="tag">组件化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/">
+                        <span class="tag">计算机资源管理</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/">
+                        <span class="tag">资源调度</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered" style="flex-shrink: 1">
+                <div>
+                    
+                    <figure class="image is-128x128 has-mb-6">
+                        <img class="" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="罗辑思维技术团队">
+                    </figure>
+                    
+                    <p class="is-size-4 is-block">
+                        罗辑思维技术团队
+                    </p>
+                    
+                    
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <a href="/archives">
+                        <p class="title has-text-weight-normal">
+                            16
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <a href="/categories">
+                        <p class="title has-text-weight-normal">
+                            6
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <a href="/tags">
+                        <p class="title has-text-weight-normal">
+                            21
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/luojilab" target="_blank">
+                关注我</a>
+        </div>
+        
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/luojilab">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Website" href="https://www.igetget.com">
+                
+                <i class="fab fa-chrome"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2020/01/16/dd-technical/the-evolution-of-iget-hybrid-architecture/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/20200116191137.aadcd92b4133e63af053776be169d9a3.png" alt="【八里庄技术沙龙 - 18期】得到 hybrid 架构的演进之路">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-15T16:00:00.000Z">2020-01-16</time></div>
+                    <a href="/2020/01/16/dd-technical/the-evolution-of-iget-hybrid-architecture/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙 - 18期】得到 hybrid 架构的演进之路</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a> / <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/%E5%89%8D%E7%AB%AF/">前端</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/12/30/zeroteam/k8s-autoscale-guide/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/autoscale-thumbnail2.png" alt="kubernetes 指南 -- 弹性伸缩">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-12-29T16:00:00.000Z">2019-12-30</time></div>
+                    <a href="/2019/12/30/zeroteam/k8s-autoscale-guide/" class="title has-link-black-ter is-size-6 has-text-weight-normal">kubernetes 指南 -- 弹性伸缩</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%9F%BA%E7%A1%80%E6%9E%B6%E6%9E%84/">基础架构</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/12/16/zeroteam/You_have_to_know_the_rate_limit_of_the_series/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NjQ3NzIxNDM2.png" alt="不得不了解系列之限流">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-12-15T16:00:00.000Z">2019-12-16</time></div>
+                    <a href="/2019/12/16/zeroteam/You_have_to_know_the_rate_limit_of_the_series/" class="title has-link-black-ter is-size-6 has-text-weight-normal">不得不了解系列之限流</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%9F%BA%E7%A1%80%E6%9E%B6%E6%9E%84/">基础架构</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/11/08/fontend/grid/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTYyODQwMTc5.png" alt="Grid 布局初探">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-07T16:00:00.000Z">2019-11-08</time></div>
+                    <a href="/2019/11/08/fontend/grid/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Grid 布局初探</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/11/07/dd-technical/ddmvvm-android/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3MzQ0NjI1NDI4.png" alt="【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-06T16:00:00.000Z">2019-11-07</time></div>
+                    <a href="/2019/11/07/dd-technical/ddmvvm-android/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙-15 期】得到安卓客户端的工程架构实践</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            链接
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="https://www.igetget.com/join" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">得到 App 校园招聘</span>
+                    </span>
+                    <span class="level-right">
+                        <span class="level-item tag">www.igetget.com</span>
+                    </span>
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+            <span class="level-start">
+                <span class="level-item">八里庄技术沙龙</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a><ul><li>
+        <a class="level is-marginless" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/%E5%89%8D%E7%AB%AF/">
+            <span class="level-start">
+                <span class="level-item">前端</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li></ul></li><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/">
+            <span class="level-start">
+                <span class="level-item">前端</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a><ul><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/NodeJs/">
+            <span class="level-start">
+                <span class="level-item">NodeJs</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li></ul></li><li>
+        <a class="level is-marginless" href="/categories/%E5%9F%BA%E7%A1%80%E6%9E%B6%E6%9E%84/">
+            <span class="level-start">
+                <span class="level-item">基础架构</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+            <span class="level-start">
+                <span class="level-item">大数据</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/Android/" style="font-size: 10px;">Android</a> <a href="/tags/Docker/" style="font-size: 13.33px;">Docker</a> <a href="/tags/Elasticsearch/" style="font-size: 10px;">Elasticsearch</a> <a href="/tags/Hybrid/" style="font-size: 10px;">Hybrid</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Kubernetes/" style="font-size: 13.33px;">Kubernetes</a> <a href="/tags/NodeJs/" style="font-size: 10px;">NodeJs</a> <a href="/tags/Nodejs/" style="font-size: 10px;">Nodejs</a> <a href="/tags/Yarn/" style="font-size: 10px;">Yarn</a> <a href="/tags/%E4%BA%91%E5%8E%9F%E7%94%9F/" style="font-size: 10px;">云原生</a> <a href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/" style="font-size: 16.67px;">八里庄技术沙龙</a> <a href="/tags/%E5%89%8D%E7%AB%AF/" style="font-size: 20px;">前端</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 10px;">大数据</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" style="font-size: 10px;">并发编程</a> <a href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/" style="font-size: 10px;">开源项目</a> <a href="/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/" style="font-size: 10px;">微服务</a> <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" style="font-size: 10px;">性能优化</a> <a href="/tags/%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86/" style="font-size: 13.33px;">服务治理</a> <a href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/" style="font-size: 10px;">组件化</a> <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" style="font-size: 10px;">计算机资源管理</a> <a href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" style="font-size: 13.33px;">资源调度</a>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+        </div>
+    
+</div>
+
+                <!-- post 页面不展示右侧 -->
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="kubernetes 指南 -- 弹性伸缩" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 刘鹏&nbsp;
+                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+<script>
+var IcarusThemeSettings = {
+    article: {
+        highlight: {
+            clipboard: true,
+            fold: 'unfolded'
+        }
+    }
+};
+</script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+
+
+
+    
+    
+<script src="/js/animation.js"></script>
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+<script src="/js/gallery.js" defer></script>
+
+    
+    
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+    
+    
+<!-- <a id="back-to-top" title="回到顶端" href="javascript:;"> -->
+<a id="back-to-top" title="回到顶端">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+
+</html>
