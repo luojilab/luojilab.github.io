@@ -8,6 +8,7 @@
 
 ## 基础架构
 1. [不得不了解系列之限流](https://blog.luojilab.com/2019/12/16/zeroteam/You_have_to_know_the_rate_limit_of_the_series/)
+2. [kubernetes 指南 -- 弹性伸缩](https://blog.luojilab.com/2019/12/30/zeroteam/k8s-autoscale-guide/)
 
 ## 前端
 1. [Vue社区的路由解决方案：vue-stack-router](https://blog.luojilab.com/2019/09/10/fontend/vue-stack-router/)
