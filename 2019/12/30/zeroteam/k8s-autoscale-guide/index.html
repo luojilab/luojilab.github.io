@@ -11,16 +11,16 @@
 <title>kubernetes 指南 -- 弹性伸缩 - 罗辑思维技术博客</title>
 
 
-    <meta name="description" content="kubernetes 指南 – 弹性伸缩0x0 pre弹性伸缩, 是云计算中的一种常用方法，通过该方法，服务器池中的计算资源量（通常根据有效的服务器数量来衡量）会根据服务器池中的负载进行动态伸缩。  本文旨在为想在 kubernetes 中使用弹性伸缩功能的读者解释相关概念，并制定一条较为清晰的路线图。">
+    <meta name="description" content="0x0 pre弹性伸缩, 是云计算中的一种常用方法，通过该方法，服务器池中的计算资源量（通常根据有效的服务器数量来衡量）会根据服务器池中的负载进行动态伸缩。  本文旨在为想在 kubernetes 中使用弹性伸缩功能的读者解释相关概念，并制定一条较为清晰的路线图。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="kubernetes 指南 -- 弹性伸缩">
 <meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2019&#x2F;12&#x2F;30&#x2F;zeroteam&#x2F;k8s-autoscale-guide&#x2F;index.html">
 <meta property="og:site_name" content="罗辑思维技术博客">
-<meta property="og:description" content="kubernetes 指南 – 弹性伸缩0x0 pre弹性伸缩, 是云计算中的一种常用方法，通过该方法，服务器池中的计算资源量（通常根据有效的服务器数量来衡量）会根据服务器池中的负载进行动态伸缩。  本文旨在为想在 kubernetes 中使用弹性伸缩功能的读者解释相关概念，并制定一条较为清晰的路线图。">
+<meta property="og:description" content="0x0 pre弹性伸缩, 是云计算中的一种常用方法，通过该方法，服务器池中的计算资源量（通常根据有效的服务器数量来衡量）会根据服务器池中的负载进行动态伸缩。  本文旨在为想在 kubernetes 中使用弹性伸缩功能的读者解释相关概念，并制定一条较为清晰的路线图。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https:&#x2F;&#x2F;piccdn.luojilab.com&#x2F;fe-oss&#x2F;default&#x2F;autoscale-thumbnail2.png">
 <meta property="article:published_time" content="2019-12-29T16:00:00.000Z">
-<meta property="article:modified_time" content="2020-03-20T04:34:55.026Z">
+<meta property="article:modified_time" content="2020-03-20T04:38:26.719Z">
 <meta property="article:tag" content="资源调度">
 <meta property="article:tag" content="Kubernetes">
 <meta property="article:tag" content="Docker">
@@ -167,7 +167,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    1 小时 读完 (大约 7439 个字)
+                    1 小时 读完 (大约 7432 个字)
                 </span>
                 
                 
@@ -180,7 +180,7 @@
             
         </h1>
         <div class="content">
-            <h1 id="kubernetes-指南-–-弹性伸缩"><a href="#kubernetes-指南-–-弹性伸缩" class="headerlink" title="kubernetes 指南 – 弹性伸缩"></a>kubernetes 指南 – 弹性伸缩</h1><h2 id="0x0-pre"><a href="#0x0-pre" class="headerlink" title="0x0 pre"></a>0x0 pre</h2><p><a href="https://zh.wikipedia.org/wiki/%E5%BC%B9%E6%80%A7%E4%BC%B8%E7%BC%A9" target="_blank" rel="noopener">弹性伸缩</a>, 是云计算中的一种常用方法，通过该方法，服务器池中的计算资源量（通常根据有效的服务器数量来衡量）会根据服务器池中的负载进行动态伸缩。 </p>
+            <h2 id="0x0-pre"><a href="#0x0-pre" class="headerlink" title="0x0 pre"></a>0x0 pre</h2><p><a href="https://zh.wikipedia.org/wiki/%E5%BC%B9%E6%80%A7%E4%BC%B8%E7%BC%A9" target="_blank" rel="noopener">弹性伸缩</a>, 是云计算中的一种常用方法，通过该方法，服务器池中的计算资源量（通常根据有效的服务器数量来衡量）会根据服务器池中的负载进行动态伸缩。 </p>
 <p>本文旨在为想在 kubernetes 中使用弹性伸缩功能<br>的读者解释相关概念，并制定一条较为清晰的路线图。 </p>
 <a id="more"></a>
 
@@ -507,50 +507,102 @@ kube state metrics 主要关注于从 deployment, replica set, stateful set 等 
                     目录
                 </h3>
                 <ul class="menu-list"><li>
-        <a class="is-flex" href="#kubernetes-指南-–-弹性伸缩">
-        <span class="has-mr-6">1</span>
-        <span>kubernetes 指南 – 弹性伸缩</span>
-        </a><ul class="menu-list"><li>
         <a class="is-flex" href="#0x0-pre">
-        <span class="has-mr-6">1.1</span>
+        <span class="has-mr-6">1</span>
         <span>0x0 pre</span>
         </a></li><li>
         <a class="is-flex" href="#0x1-autoscaling">
-        <span class="has-mr-6">1.2</span>
+        <span class="has-mr-6">2</span>
         <span>0x1 autoscaling</span>
         </a><ul class="menu-list"><li>
         <a class="is-flex" href="#目的">
-        <span class="has-mr-6">1.2.1</span>
+        <span class="has-mr-6">2.1</span>
         <span>目的</span>
         </a></li><li>
         <a class="is-flex" href="#场景">
-        <span class="has-mr-6">1.2.2</span>
+        <span class="has-mr-6">2.2</span>
         <span>场景</span>
-        </a></li></ul></li><li>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#节点和服务">
+        <span class="has-mr-6">2.2.1</span>
+        <span>节点和服务</span>
+        </a></li><li>
+        <a class="is-flex" href="#垂直伸缩与水平伸缩">
+        <span class="has-mr-6">2.2.2</span>
+        <span>垂直伸缩与水平伸缩</span>
+        </a></li><li>
+        <a class="is-flex" href="#弹性伸缩的级别。">
+        <span class="has-mr-6">2.2.3</span>
+        <span>弹性伸缩的级别。</span>
+        </a></li></ul></li></ul></li><li>
         <a class="is-flex" href="#0x2-autoscaling-in-kubernetes">
-        <span class="has-mr-6">1.3</span>
+        <span class="has-mr-6">3</span>
         <span>0x2 autoscaling in kubernetes</span>
         </a><ul class="menu-list"><li>
         <a class="is-flex" href="#service-autoscaling">
-        <span class="has-mr-6">1.3.1</span>
+        <span class="has-mr-6">3.1</span>
         <span>service autoscaling</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#垂直伸缩">
+        <span class="has-mr-6">3.1.1</span>
+        <span>垂直伸缩</span>
         </a></li><li>
-        <a class="is-flex" href="#node-autoscaling">
-        <span class="has-mr-6">1.3.2</span>
-        <span>node autoscaling</span>
+        <a class="is-flex" href="#水平伸缩">
+        <span class="has-mr-6">3.1.2</span>
+        <span>水平伸缩</span>
         </a></li><li>
-        <a class="is-flex" href="#数据监控">
-        <span class="has-mr-6">1.3.3</span>
-        <span>数据监控</span>
+        <a class="is-flex" href="#定时伸缩">
+        <span class="has-mr-6">3.1.3</span>
+        <span>定时伸缩</span>
+        </a></li><li>
+        <a class="is-flex" href="#预测性伸缩">
+        <span class="has-mr-6">3.1.4</span>
+        <span>预测性伸缩</span>
         </a></li></ul></li><li>
+        <a class="is-flex" href="#node-autoscaling">
+        <span class="has-mr-6">3.2</span>
+        <span>node autoscaling</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#垂直伸缩-1">
+        <span class="has-mr-6">3.2.1</span>
+        <span>垂直伸缩</span>
+        </a></li><li>
+        <a class="is-flex" href="#水平伸缩-1">
+        <span class="has-mr-6">3.2.2</span>
+        <span>水平伸缩</span>
+        </a></li><li>
+        <a class="is-flex" href="#定时伸缩-1">
+        <span class="has-mr-6">3.2.3</span>
+        <span>定时伸缩</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#数据监控">
+        <span class="has-mr-6">3.3</span>
+        <span>数据监控</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#heapster">
+        <span class="has-mr-6">3.3.1</span>
+        <span>heapster</span>
+        </a></li><li>
+        <a class="is-flex" href="#metrics-server">
+        <span class="has-mr-6">3.3.2</span>
+        <span>metrics server</span>
+        </a></li><li>
+        <a class="is-flex" href="#state-metrics">
+        <span class="has-mr-6">3.3.3</span>
+        <span>state metrics</span>
+        </a></li><li>
+        <a class="is-flex" href="#prometheus">
+        <span class="has-mr-6">3.3.4</span>
+        <span>prometheus</span>
+        </a></li></ul></li></ul></li><li>
         <a class="is-flex" href="#0x3-方案对比">
-        <span class="has-mr-6">1.4</span>
+        <span class="has-mr-6">4</span>
         <span>0x3 方案对比</span>
         </a></li><li>
         <a class="is-flex" href="#0x4-其他">
-        <span class="has-mr-6">1.5</span>
+        <span class="has-mr-6">5</span>
         <span>0x4 其他</span>
-        </a></li></ul></li></ul>
+        </a></li></ul>
             </div>
         </div>
     </div>
