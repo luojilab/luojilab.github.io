@@ -8,25 +8,25 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 
-<title>参考牛顿冷却定律优化最热问题的排序 - 罗辑思维技术博客</title>
+<title>牛顿冷却定律在得到APP的实践 - 罗辑思维技术博客</title>
 
 
-    <meta name="description" content="背景介绍得到锦囊（原得到问答，十万个怎么办）产品刚上线时，该版块首页的最热排序暴露了两个问题：分页时数据重复和最热榜单被霸屏，本文将围绕解决这两个问题来展开。 “牛顿冷却定律”本质上它描述了高于周围温度的物体会向外散热，并逐渐降温的过程，同时单位时间内散热与周围温差会成正比关系。通过建立”温度”与”时间”之间的函数关系，构建一个”指数式衰减”（Exponential decay）的过程。  如果我">
+    <meta name="description" content="背景介绍「得到锦囊」产品刚上线时，该版块首页的最热排序暴露了两个问题：分页时数据重复和最热榜单被霸屏，本文将围绕解决这两个问题来展开，介绍下如何参考牛顿冷却定律来优化最热内容的排序。 “牛顿冷却定律”本质上它描述了高于周围温度的物体会向外散热，并逐渐降温的过程，同时单位时间内散热与周围温差会成正比关系。通过建立”温度”与”时间”之间的函数关系，构建一个”指数式衰减”（Exponential dec">
 <meta property="og:type" content="article">
-<meta property="og:title" content="参考牛顿冷却定律优化最热问题的排序">
+<meta property="og:title" content="牛顿冷却定律在得到APP的实践">
 <meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2020&#x2F;03&#x2F;08&#x2F;backend&#x2F;sort-with-law-of-cooling&#x2F;index.html">
 <meta property="og:site_name" content="罗辑思维技术博客">
-<meta property="og:description" content="背景介绍得到锦囊（原得到问答，十万个怎么办）产品刚上线时，该版块首页的最热排序暴露了两个问题：分页时数据重复和最热榜单被霸屏，本文将围绕解决这两个问题来展开。 “牛顿冷却定律”本质上它描述了高于周围温度的物体会向外散热，并逐渐降温的过程，同时单位时间内散热与周围温差会成正比关系。通过建立”温度”与”时间”之间的函数关系，构建一个”指数式衰减”（Exponential decay）的过程。  如果我">
+<meta property="og:description" content="背景介绍「得到锦囊」产品刚上线时，该版块首页的最热排序暴露了两个问题：分页时数据重复和最热榜单被霸屏，本文将围绕解决这两个问题来展开，介绍下如何参考牛顿冷却定律来优化最热内容的排序。 “牛顿冷却定律”本质上它描述了高于周围温度的物体会向外散热，并逐渐降温的过程，同时单位时间内散热与周围温差会成正比关系。通过建立”温度”与”时间”之间的函数关系，构建一个”指数式衰减”（Exponential dec">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http:&#x2F;&#x2F;piccdn.igetget.com&#x2F;img&#x2F;202003&#x2F;07&#x2F;202003072246176344549623.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;piccdn.igetget.com&#x2F;img&#x2F;202004&#x2F;06&#x2F;202004061906309293853336.jpg">
 <meta property="article:published_time" content="2020-03-07T16:00:00.000Z">
-<meta property="article:modified_time" content="2020-04-10T09:21:52.743Z">
+<meta property="article:modified_time" content="2020-04-10T09:57:13.237Z">
 <meta property="article:tag" content="自然冷却算法">
 <meta property="article:tag" content="最热内容排序">
 <meta property="article:tag" content="牛顿冷却定律的运用">
 <meta property="article:tag" content="后端数据排序">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http:&#x2F;&#x2F;piccdn.igetget.com&#x2F;img&#x2F;202003&#x2F;07&#x2F;202003072246176344549623.png">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;piccdn.igetget.com&#x2F;img&#x2F;202004&#x2F;06&#x2F;202004061906309293853336.jpg">
 
 
 
@@ -85,7 +85,7 @@
         <div class="navbar-brand is-flex-center">
             <a class="navbar-item navbar-logo" href="/">
             
-                <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="参考牛顿冷却定律优化最热问题的排序" height="28">
+                <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="牛顿冷却定律在得到APP的实践" height="28">
             
             </a>
         </div>
@@ -145,7 +145,7 @@
     
     <div class="card-image">
         <span  class="image is-7by1">
-            <img class="thumbnail" src="http://piccdn.igetget.com/img/202003/07/202003072246176344549623.png" alt="参考牛顿冷却定律优化最热问题的排序">
+            <img class="thumbnail" src="http://piccdn.igetget.com/img/202004/06/202004061906309293853336.jpg" alt="牛顿冷却定律在得到APP的实践">
         </span>
     </div>
     
@@ -175,11 +175,11 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                参考牛顿冷却定律优化最热问题的排序
+                牛顿冷却定律在得到APP的实践
             
         </h1>
         <div class="content">
-            <h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><p>得到锦囊（原得到问答，十万个怎么办）产品刚上线时，该版块首页的最热排序暴露了两个问题：<strong>分页时数据重复和最热榜单被霸屏</strong>，本文将围绕解决这两个问题来展开。</p>
+            <h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><p>「得到锦囊」产品刚上线时，该版块首页的最热排序暴露了两个问题：<strong>分页时数据重复和最热榜单被霸屏</strong>，本文将围绕解决这两个问题来展开，介绍下如何参考牛顿冷却定律来优化最热内容的排序。</p>
 <p>“<strong>牛顿冷却定律</strong>”本质上它描述了高于周围温度的物体会向外散热，并逐渐降温的过程，同时单位时间内散热与周围温差会成正比关系。通过建立”温度”与”时间”之间的函数关系，构建一个”指数式衰减”（Exponential decay）的过程。</p>
 <p> 如果我们把”热文排名”想象成一个”自然冷却”的过程，那么如下的场景是成立的：</p>
 <ul>
@@ -189,7 +189,7 @@
 <a id="more"></a>
 
 
-<h1 id="一、最热榜单暴露的问题"><a href="#一、最热榜单暴露的问题" class="headerlink" title="一、最热榜单暴露的问题"></a>一、最热榜单暴露的问题</h1><p>2020年1月初，得到App的新产品得到锦囊（原得到问答，十万个怎么办）正式上线。产品刚上线时，版块首页的最热排序模块，暴露出了两个问题：分页时数据重复和最热榜单被霸屏，本文将围绕解决这两个问题来展开。</p>
+<h1 id="一、最热榜单暴露的问题"><a href="#一、最热榜单暴露的问题" class="headerlink" title="一、最热榜单暴露的问题"></a>一、最热榜单暴露的问题</h1><p>2020年1月初，得到App的新产品「得到锦囊」正式上线。产品刚上线时，版块首页的最热排序模块，暴露出了两个问题：分页时数据重复和最热榜单被霸屏，本文将围绕解决这两个问题来展开。</p>
 <h4 id="排序规则与朴素的实现方案"><a href="#排序规则与朴素的实现方案" class="headerlink" title="排序规则与朴素的实现方案"></a>排序规则与朴素的实现方案</h4><p>产品需求定义的最热排序规则是：按照问题的总查看量来倒序排列，且有分页和查询条件。服务端对于这种场景，最简单高效的实现方式，就是利用sql的query语句了，于是我们就直接 <strong>[order by {问题的查看量} desc]</strong> 来实现了。</p>
 <blockquote>
 <p>总查看数 = 获得查看权益的用户数 = 购买数 + 赠一得一领取数</p>
@@ -725,14 +725,14 @@
             
             <a href="/2020/03/08/backend/sort-with-law-of-cooling/" class="media-left">
                 <p class="image is-64x64">
-                    <img class="thumbnail" src="http://piccdn.igetget.com/img/202003/07/202003072246176344549623.png" alt="参考牛顿冷却定律优化最热问题的排序">
+                    <img class="thumbnail" src="http://piccdn.igetget.com/img/202004/06/202004061906309293853336.jpg" alt="牛顿冷却定律在得到APP的实践">
                 </p>
             </a>
             
             <div class="media-content">
                 <div class="content">
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-07T16:00:00.000Z">2020-03-08</time></div>
-                    <a href="/2020/03/08/backend/sort-with-law-of-cooling/" class="title has-link-black-ter is-size-6 has-text-weight-normal">参考牛顿冷却定律优化最热问题的排序</a>
+                    <a href="/2020/03/08/backend/sort-with-law-of-cooling/" class="title has-link-black-ter is-size-6 has-text-weight-normal">牛顿冷却定律在得到APP的实践</a>
                     <p class="is-size-7 is-uppercase">
                         <a class="has-link-grey -link" href="/categories/%E6%9C%8D%E5%8A%A1%E7%AB%AF/">服务端</a>
                     </p>
@@ -1039,7 +1039,7 @@
             <div class="level-start has-text-centered-mobile">
                 <a class="footer-logo is-block has-mb-6" href="/">
                 
-                    <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="参考牛顿冷却定律优化最热问题的排序" height="28">
+                    <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="牛顿冷却定律在得到APP的实践" height="28">
                 
                 </a>
                 <p class="is-size-7">
