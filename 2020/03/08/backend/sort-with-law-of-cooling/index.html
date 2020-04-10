@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html  lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+
+<meta name="generator" content="Hexo 4.1.0" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<title>参考牛顿冷却定律优化最热问题的排序 - 罗辑思维技术博客</title>
+
+
+    <meta name="description" content="背景介绍得到锦囊（原得到问答，十万个怎么办）产品刚上线时，该版块首页的最热排序暴露了两个问题：分页时数据重复和最热榜单被霸屏，本文将围绕解决这两个问题来展开。 “牛顿冷却定律”本质上它描述了高于周围温度的物体会向外散热，并逐渐降温的过程，同时单位时间内散热与周围温差会成正比关系。通过建立”温度”与”时间”之间的函数关系，构建一个”指数式衰减”（Exponential decay）的过程。  如果我">
+<meta property="og:type" content="article">
+<meta property="og:title" content="参考牛顿冷却定律优化最热问题的排序">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2020&#x2F;03&#x2F;08&#x2F;backend&#x2F;sort-with-law-of-cooling&#x2F;index.html">
+<meta property="og:site_name" content="罗辑思维技术博客">
+<meta property="og:description" content="背景介绍得到锦囊（原得到问答，十万个怎么办）产品刚上线时，该版块首页的最热排序暴露了两个问题：分页时数据重复和最热榜单被霸屏，本文将围绕解决这两个问题来展开。 “牛顿冷却定律”本质上它描述了高于周围温度的物体会向外散热，并逐渐降温的过程，同时单位时间内散热与周围温差会成正比关系。通过建立”温度”与”时间”之间的函数关系，构建一个”指数式衰减”（Exponential decay）的过程。  如果我">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http:&#x2F;&#x2F;piccdn.igetget.com&#x2F;img&#x2F;202003&#x2F;07&#x2F;202003072246176344549623.png">
+<meta property="article:published_time" content="2020-03-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-04-10T09:21:52.743Z">
+<meta property="article:tag" content="自然冷却算法">
+<meta property="article:tag" content="最热内容排序">
+<meta property="article:tag" content="牛顿冷却定律的运用">
+<meta property="article:tag" content="后端数据排序">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;piccdn.igetget.com&#x2F;img&#x2F;202003&#x2F;07&#x2F;202003072246176344549623.png">
+
+
+
+
+
+
+
+<link rel="icon" href="/images/favicon.svg">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+<style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+    
+    
+    
+    
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+    
+    
+    
+    
+    
+    
+    
+    <link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="参考牛顿冷却定律优化最热问题的排序" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">首页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/tags">标签</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                
+
+                <!-- post 页面右侧官宽度 66.7% -->
+                
+                <div style="width: 66.7%!important;" class="column is-8-tablet is-8-desktop is-6-widescreen has-order-2 column-main">
+<div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="http://piccdn.igetget.com/img/202003/07/202003072246176344549623.png" alt="参考牛顿冷却定律优化最热问题的排序">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                
+                <div class="level-item">韩宇斌</div>
+                
+                <time class="level-item has-text-grey" datetime="2020-03-07T16:00:00.000Z">2020-03-08</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/%E6%9C%8D%E5%8A%A1%E7%AB%AF/">服务端</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    38 分钟 读完 (大约 5773 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                参考牛顿冷却定律优化最热问题的排序
+            
+        </h1>
+        <div class="content">
+            <h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><p>得到锦囊（原得到问答，十万个怎么办）产品刚上线时，该版块首页的最热排序暴露了两个问题：<strong>分页时数据重复和最热榜单被霸屏</strong>，本文将围绕解决这两个问题来展开。</p>
+<p>“<strong>牛顿冷却定律</strong>”本质上它描述了高于周围温度的物体会向外散热，并逐渐降温的过程，同时单位时间内散热与周围温差会成正比关系。通过建立”温度”与”时间”之间的函数关系，构建一个”指数式衰减”（Exponential decay）的过程。</p>
+<p> 如果我们把”热文排名”想象成一个”自然冷却”的过程，那么如下的场景是成立的：</p>
+<ul>
+<li>任一时刻，网站中所有的文章，都有一个”当前温度”，温度最高的文章就排在第一位。</li>
+<li>随着时间流逝，所有文章的温度都逐渐”冷却”。</li>
+</ul>
+<a id="more"></a>
+
+
+<h1 id="一、最热榜单暴露的问题"><a href="#一、最热榜单暴露的问题" class="headerlink" title="一、最热榜单暴露的问题"></a>一、最热榜单暴露的问题</h1><p>2020年1月初，得到App的新产品得到锦囊（原得到问答，十万个怎么办）正式上线。产品刚上线时，版块首页的最热排序模块，暴露出了两个问题：分页时数据重复和最热榜单被霸屏，本文将围绕解决这两个问题来展开。</p>
+<h4 id="排序规则与朴素的实现方案"><a href="#排序规则与朴素的实现方案" class="headerlink" title="排序规则与朴素的实现方案"></a>排序规则与朴素的实现方案</h4><p>产品需求定义的最热排序规则是：按照问题的总查看量来倒序排列，且有分页和查询条件。服务端对于这种场景，最简单高效的实现方式，就是利用sql的query语句了，于是我们就直接 <strong>[order by {问题的查看量} desc]</strong> 来实现了。</p>
+<blockquote>
+<p>总查看数 = 获得查看权益的用户数 = 购买数 + 赠一得一领取数</p>
+</blockquote>
+<p>这个简单朴素的实现方式，在加上缓存策略，使得我们用较小的成本就满足了产品需求，也应对了较高的流量。</p>
+<p><img src="http://piccdn.igetget.com/img/202003/08/202003081109022155643559.png" alt="按查看量的最热排序"></p>
+<p><strong>得到锦囊（原问答）的产品定位</strong>，和知乎、头条的不太一样，不仅对于提问的内容进行严格审核，对于老师们的解答内容也是会按照标准来品控，所以我们上新的速度并不会很快。等未来发布的问题数量大了以后，肯定是会启用基于大数据的个性推荐算法的，但是摆在眼前的两个问题，必须要尽快解决。</p>
+<blockquote>
+<p><strong>说明：在2020-03月底的版本中，【得到问答】正式改名为【得到方案】。在2020-04月初的版本中【得到方案】改名为【得到锦囊】，为用户提供更为全面的知识服务。时间和精力的关系，本文中的一些文字和图片不进行全量更新了。</strong></p>
+</blockquote>
+<h2 id="问题一-：-分页时会出现重复数据"><a href="#问题一-：-分页时会出现重复数据" class="headerlink" title="问题一 ： 分页时会出现重复数据"></a>问题一 ： 分页时会出现重复数据</h2><p>分页时数据重复，在性质上是个bug，得优先解决。</p>
+<p>利用sql的order by 和 limit 对行数据进行排序和分页时，最正确的姿势的是基于至少一个固定的字段值。排序值变化频繁，db加载下一页数据的时候如果上一页某条行记录的排序值发生了变化，就很可能会导致上一页中出现过的记录在下一页再次出现。我们最热排序的依据【总查看数】就是个变化频繁的值，加上我们对每页的结果数据都使用了缓存策略，使得数据在不同的页面出现的几率加大。</p>
+<p>通过一些算法策略的调整，比如缓存的key值和查询条件增加了时间窗口，我们降低了数据被重复展现的概率，低到用户几乎无察觉，低到让自己也以为彻底解决了问题。</p>
+<p>上新的内容接近百条的时候，新的问题暴露了。春节前的某一天，老板、产品经理、运营都分别吐槽了“最热榜单被霸屏”的问题，希望能有所优化，每天能呈现不同的热点内容 。于是，我们调整了排序语句，在其中加入了最近被查看时间的参数，踩着“知识春晚封版”最后上线的时间点完成了上线。很有效，最热榜单活了，每个小时都会变化，很多问题都有了更多露脸的机会，包括在多个页面反复露脸……</p>
+<p>数据重复的几率增高了，高到产品经理和测试都发现了，居然还录屏为证 (ಥ﹏ಥ)</p>
+<p>如下是其中的一个实例截屏，我们能看到问题《28岁码农，不想做管理岗，又担心以后失去竞争力，怎么办？》在两个页面出现。</p>
+<p><img src="http://piccdn.igetget.com/img/202003/08/202003081256551151732550.png" alt="分页时数据重复1"></p>
+<p><img src="http://piccdn.igetget.com/img/202003/08/202003081256552615345851.png" alt="分页时数据重复2"></p>
+<h2 id="问题二-：-最热榜单被霸屏"><a href="#问题二-：-最热榜单被霸屏" class="headerlink" title="问题二 ： 最热榜单被霸屏"></a>问题二 ： 最热榜单被霸屏</h2><p>我们的新内容是以每天5~10个的频率来发布上线的，用户对于内容的喜好和曝光率会直接影响被查看的数量和排序。</p>
+<p>产品上线没多久，排名靠前的榜单就被上线较早且又被关注较多的几条问题占据了，后面新上线的问题，<strong>曝光的机会很低</strong>。如果按照刚上线时的排序算法，下面几条问题几乎会持续霸屏：</p>
+<p><img src="http://piccdn.igetget.com/img/202003/08/202003081256549634822623.png" alt="霸屏的热点问题"></p>
+<p>我们的运营发起了一些专题的促销活动，才足以打破了上面的局面。但是，我们是不能对每个问题方案都进行运营活动来拉动销量，更多的还是顺其自然，交给用户去选择，让内容靠实力去竞争。</p>
+<p>“长尾效应”的理论告诉我们，非热点内容的累计销售数量，一定是高于几条热点内容的累计销售数量的，所以我们要解决被霸屏的现象，让更多的内容能够有机会登上热榜去“抛头露面”。</p>
+<h1 id="二、问题解决方案分析"><a href="#二、问题解决方案分析" class="headerlink" title="二、问题解决方案分析"></a>二、问题解决方案分析</h1><h2 id="1、-分页时会出现重复数据"><a href="#1、-分页时会出现重复数据" class="headerlink" title="1、 分页时会出现重复数据"></a>1、 分页时会出现重复数据</h2><p>问题出现的原因是排序所依据的键值变换频繁，导致翻页语句在执行时数据已经发生了变化。我们需要找到一个可以用于排序的值，一个即能根据热点趋势及时变化，又相对固定不变的值。</p>
+<p>开始时，觉得挺矛盾的，解决了一个问题却加剧了另一个问题，直到发觉这个排序值可以和解决最热榜单霸屏问题使用一个值，思路就开始打开了。</p>
+<h2 id="2、-最热榜单被霸屏"><a href="#2、-最热榜单被霸屏" class="headerlink" title="2、 最热榜单被霸屏"></a>2、 最热榜单被霸屏</h2><p>尝试了把问题的被查看时间参与到排序规则中，使得排序可以每个小时刷新1次。上线后，榜单是真的变了起来，最新被查看的问题能够浮上来，但是当热门问题也被查看后依然会霸屏。</p>
+<p>这个改良版的排序方法，其实就是文末参考资料中描述的<a href="https://www.ruanyifeng.com/blog/2012/02/ranking_algorithm_hacker_news.html" target="_blank" rel="noopener"><strong>Delicious</strong></a>算法的思路，这是最直接、最简单的算法，按照单位时间内用户的投票数进行排名，得票最多的项目，自然就排在第一位。</p>
+<p>这个算法的优点是简单、容易部署、内容更新快；缺点是，一方面，排名变化不够平滑，前一个小时还排名靠前的内容，往往第二个小时就一落千丈，另一方面，缺乏自动淘汰旧内容的机制，某些热门内容可能会长期占据排行榜前列。</p>
+<p>最热榜单开始变化的几天中，运营从数据上查看，问题的整体访问情况要好于调整之前，虽然由于使用姿势不正确带来了数据重复的bug，但证明最热榜单的排序动起来是很有意义的。在咨询公司大数据的专业人士“溥神”后，给我们推荐了业内解决这种问题的通用算法之一“牛顿冷却定律”，开始更科学的解决这个问题。</p>
+<h4 id="定律的解读"><a href="#定律的解读" class="headerlink" title="定律的解读"></a>定律的解读</h4><p>伟大的物理学家牛顿，早在17世纪就提出了温度冷却的数学公式，被后人称作”<strong>牛顿冷却定律</strong>“（Newton’s Law of Cooling）。</p>
+<p><img src="http://piccdn.igetget.com/img/202003/07/202003072229146836811096.png" alt="牛顿冷却定律"></p>
+<p>牛顿冷却定律有广泛的用途。例如，人死亡以后温度调节功能随即消失，因此借助于由正常体温（约为37摄氏度）与环境温度的比较，利用这个定律，就可以判定死亡的时间。</p>
+<p>举个实际计算的例子。某冬晨，警察局接到报案，在街头发现一具尸体。在6点30分的时候，测量其体温为18摄氏度，到 7点30分已下降到16摄氏度。假设室外气温维持在约10摄氏度不变，而且设人体正常体温是37摄氏度，问这个人是什么时候死的？</p>
+<p><img src="http://piccdn.igetget.com/img/202004/07/202004072118098754567800.png" alt="死亡时间"></p>
+<p>【来自得到电子书《不可思议的自然对数》】</p>
+<p>如果我们把”热文排名”想象成一个”自然冷却”的过程，那么如下的场景是成立的：</p>
+<ul>
+<li><strong>当前温度</strong>。任一时刻，网站中所有的文章，都有一个”当前温度”，温度最高的文章就排在第一位。</li>
+<li><strong>冷却</strong>。随着时间流逝，所有文章的温度都逐渐”冷却”。</li>
+<li><strong>加温</strong>。如果一个用户对某篇文章投了赞成票，该文章的温度就上升一度。</li>
+</ul>
+<p>上面的这种场景，概括起来就是新的内容总是会替代老的内容，而它又恰好类似于物理学当中的“牛顿冷却定律”。本质上它描述了高于周围温度的物体会向外散热，并逐渐降温的过程，同时单位时间内散热与周围温差会成正比关系。这样假设的意义，在于我们可以照搬物理学的冷却定律，使用现成的公式，建立”温度”与”时间”之间的函数关系，从而构建一个”指数式衰减”（Exponential decay）的过程。</p>
+<h4 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h4><p><strong>物体的冷却速度，与其当前温度与室温之间的温差成正比</strong>，我们可以参考牛顿冷却定律构建问答最热排名的算法。新加一个用于排序的值，俗气点就叫热度值（hot value），这个值周期性的更新规则。</p>
+<h1 id="三、影响因素与实践过程"><a href="#三、影响因素与实践过程" class="headerlink" title="三、影响因素与实践过程"></a>三、影响因素与实践过程</h1><p>由于问答已经有了”最新上架“的榜单，我们的”最热“榜单不需要重点关注新上架内容的曝光，所以也就不需要完全采用定义一个初始温度来逐步降温的模式。</p>
+<p><img src="http://piccdn.igetget.com/img/202003/07/202003072232242706393783.png" alt="最新榜单"></p>
+<p>问答的最热榜单，希望能根据用户最近的实际查看量（例如前一天的查看量），同时结合上架时间的因素，来决定今天的热度排序。于是我们重点关注<strong>决定降温趋势的时间因子</strong>，用户行为的<strong>加温值</strong>，由此来计算<strong>热度值</strong>，公式入下：</p>
+<blockquote>
+<p><strong>热度值 = 加温值 * 时间因子</strong></p>
+</blockquote>
+<h3 id="1、时间因子"><a href="#1、时间因子" class="headerlink" title="1、时间因子"></a>1、时间因子</h3><p>无论对于用户还是平台，显然是不希望一直是同样的内容霸占了排行榜或者列表的最前面位置的，而是希望不断被更新的内容所替代。站在用户的角度上，一方面当然是希望对于一些比较热门的问题能够及时看到，但另外一方面还是希望能不断看到新的东西。</p>
+<p>对于任一内容，在某一定时间段之后，排列顺序能够发生周期性的变化，内容的热度需要随时时间的推移而慢慢衰减，这个周期就是降温周期，在周期内最好能呈现出下面这样的一种趋势：</p>
+<p><img src="http://piccdn.igetget.com/img/202003/07/202003072235212490173261.png" alt="降温趋势"></p>
+<p><strong>降温周期</strong>，可以理解为刷新文章热度的时间间隔。具体的间隔多少则需要根据平台的内容量来确定，如果内容较多，希望尽快呈现新的内容给用户，便可以把时间间隔设置的比较短；如果内容较少，则可以把间隔时间设置的比较长。截至到这篇文档初次编写的时候（2020-02-12 18:43），我们问答的数量是298，所以应该把间隔时间设置的长些，例如30天。</p>
+<p><strong>实践：经过观察和数据调试，把问答热点问题的降温趋势定义在了30天，即我们新上线的问题从100°降到0°的时间为30天左右，在这期间所有上架的问题都有机会被加温升上来。当天上架的问题，只要被浏览，那么就可以优先级最高的机会被排到前面。</strong></p>
+<h3 id="2、用户行为的加温值"><a href="#2、用户行为的加温值" class="headerlink" title="2、用户行为的加温值"></a>2、用户行为的加温值</h3><p>如果只是有上面提到的热度因素，那么可能会导致的问题是，有很多相近或者同一时间段上架的问题，热度值随着时间的推移降低的速度几乎是一致的，这就还会导致内容的排名也基本上是一致的。为了解决这样的问题，还可以在除了初始热度以外，引入问题被发布后用户对其产生的一些行为，常见的行为可以包括浏览、评价、收藏、分享、点赞等。</p>
+<p>目前我们在问题列表里只展示了查看量，为了更容易被理解，我们先只把查看量当做加温值。</p>
+<p><strong>实践：在问题信息的扩展表中增加一列来记录昨日被查看量（yesterday_count ），每天更新这个值，这样根据准实时总查看量和昨日总查看量的差值，就能计算出当日的查看量，作为计算热度值的重要参数。</strong></p>
+<h3 id="3、热度值的计算"><a href="#3、热度值的计算" class="headerlink" title="3、热度值的计算"></a>3、热度值的计算</h3><p>关键点：<strong>热度因子</strong>和<strong>昨日被查看量</strong>，直接决定了一个问题的热度值，影响“最热”排序。</p>
+<p>热度值的更新：目前定在了每天凌晨的2点钟，直接用sql来计算更新。</p>
+<h4 id="版本1-、参考牛顿冷却定律"><a href="#版本1-、参考牛顿冷却定律" class="headerlink" title="版本1 、参考牛顿冷却定律"></a>版本1 、参考牛顿冷却定律</h4><p>热度因子取一个和时间反比例缩小的值。这个版本，采用了如下的计算方式，问题会在35天左右衰减。</p>
+<blockquote>
+<p>热度因子factor = (1+ROUND(1 / (DATEDIFF(当前时间,首次被浏览的时间) + 1),2) * 100)    </p>
+<p>加温值 = 昨日浏览量 = 总浏览量 - 昨日浏览量 </p>
+<p>热度值 HotValue = 加温值 * factor</p>
+</blockquote>
+<p><img src="http://piccdn.igetget.com/img/202004/06/202004062059312393872607.jpg" alt="降温趋势1"></p>
+<p><strong>实际效果：</strong> 如下是初次写稿时（2020-02-12 19:33）的一个线上问题top 10，从结果可以看到，前面的那几个霸屏问题已经被排到了下面，新上架的问题按规则排到了前面。</p>
+<p><img src="http://piccdn.igetget.com/img/202003/08/202003081304340483111128.png" alt="霸屏问题得以解决"></p>
+<h5 id="这个版本解决的问题"><a href="#这个版本解决的问题" class="headerlink" title="这个版本解决的问题"></a>这个版本解决的问题</h5><p>1、解决了分页排序数据重复的问题。由于HotValue只在固定的时间段更新，我们按照HotValue排序相当于按照了一个固定的值，所以出现重复数据的几率大大降低，在2020-02-10日下午上线后，再没有发现。</p>
+<p>2、问题的热度排序更加科学，增加了老问题的曝光几率，看到了热度降温的效果，对于学习牛顿冷却定律更有兴趣了。</p>
+<h5 id="这个版本存在的问题"><a href="#这个版本存在的问题" class="headerlink" title="这个版本存在的问题"></a>这个版本存在的问题</h5><p>1、前期降温过快</p>
+<p>问题上架的第一天是100°，第二天就直接降到了50°，如果问题在第一天的加温情况并不好（查看量较低），那么就会被排到后面。</p>
+<p>2、冷却期较长</p>
+<p>35天左右才会降到0°，而产品经理希望以后能调整到15天左右试试，而这个版本的算法比较费劲，调整多次都达不到期望的效果。</p>
+<p><strong>版本1的实验过程：</strong></p>
+<ul>
+<li>2月8日    确定方案，添加基础支撑的字段</li>
+<li>2月9日    记录昨日查看量，上线计算热度值算法</li>
+<li>2月10日    更新了线上的排序策略</li>
+</ul>
+<h4 id="版本2、使用牛顿冷却定律的公式改进"><a href="#版本2、使用牛顿冷却定律的公式改进" class="headerlink" title="版本2、使用牛顿冷却定律的公式改进"></a>版本2、使用牛顿冷却定律的公式改进</h4><h5 id="1、改进热度因子"><a href="#1、改进热度因子" class="headerlink" title="1、改进热度因子"></a>1、改进热度因子</h5><p>经过版本1的数据和经验积累，最终求出了几个适合问答现状的值，即降到冰点天数和冷却系数的定义。</p>
+<blockquote>
+<p>热度因子fac = ROUND(exp(-冷却系数* DATEDIFF(当前时间,首次被浏览的时间) * 24 ),2) * 100</p>
+</blockquote>
+<p>30天的降温趋势图如下，降温趋势将更加平滑了。</p>
+<p><img src="http://piccdn.igetget.com/img/202004/06/202004062104485583018597.jpg" alt="采用牛顿冷却定律的30天降温趋势"></p>
+<p>提前计算了几个适用的冷却参数，当问题达到一定数量的时候，可以加快降温的速度，这点是版本1所不具备的。</p>
+<table>
+<thead>
+<tr>
+<th>冷却天数</th>
+<th>冷却系数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>30天</td>
+<td>0.0072</td>
+</tr>
+<tr>
+<td>15天</td>
+<td>0.014</td>
+</tr>
+<tr>
+<td>10天</td>
+<td>0.022</td>
+</tr>
+</tbody></table>
+<h5 id="2、改进加温因子"><a href="#2、改进加温因子" class="headerlink" title="2、改进加温因子"></a>2、改进加温因子</h5><p>可以把留言数、收藏数等值加进来，实现类似如下的加温值：</p>
+<blockquote>
+<p>加温值 = 浏览量<em>50% + 留言量</em>20%+收藏量*30% ……</p>
+</blockquote>
+<p><strong>版本2的实施：</strong> </p>
+<ul>
+<li>2月21日，修改热度因子的计算规则为版本2</li>
+<li>等正式发布的问题数量接近1000时，可以考虑把冷却天数缩短为15天</li>
+</ul>
+<p>最后，我们看一张图，2020-03-08女神节问题最热榜单的排序情况。在第20条以后，我们看到上线超过30天热度因子为0的几个问题，由于昨日访问量增加到一定程度，也有机会上浮到前面了。</p>
+<p><img src="http://piccdn.igetget.com/img/202003/08/202003081612441026794989.png" alt="最热榜单的效果"></p>
+<h1 id="思考与结语"><a href="#思考与结语" class="headerlink" title="思考与结语"></a>思考与结语</h1><h4 id="1、定律使用要结合实际的场景"><a href="#1、定律使用要结合实际的场景" class="headerlink" title="1、定律使用要结合实际的场景"></a>1、定律使用要结合实际的场景</h4><p>牛顿冷却定律是伟大的，但使用时要结合实际的场景，不能生搬硬套。</p>
+<p>在算法刚上线时，我还是按照<a href="https://www.ruanyifeng.com/blog/2012/02/ranking_algorithm_hacker_news.html" target="_blank" rel="noopener"><strong>Delicious</strong></a>算法的惯性思路，觉得榜单要动起来就该让榜单在一天中刷新多次，结果由于新上线内容的热度因子值较大，导致最新和最热榜单的排序在第1页几乎完全一样，这样的话最热榜单意义就被打了折扣。</p>
+<p>资料中的对牛顿冷却定律的使用，都是定义一个初始热度值再去逐渐降温，而我们的产品中由于有了最新的榜单，也采用这种方式的话，也会导致榜单数据重合。</p>
+<h4 id="2、最热排序未来的优化方向"><a href="#2、最热排序未来的优化方向" class="headerlink" title="2、最热排序未来的优化方向"></a>2、最热排序未来的优化方向</h4><p>在内容的总量达到一定程度之前，可以由服务端对所有用户统一规则排序展示，当到达一定规模后，毫无疑问，个性化的推荐算法就一定是更好的了。</p>
+<p>在内容的数量接近1000个时，会把降温的速度加快，15天后就降低到冰点。</p>
+<p><img src="http://piccdn.igetget.com/img/202004/06/202004061906309293853336.jpg" alt="15天降温"></p>
+<h4 id="3、牛顿冷却定律适用的场景"><a href="#3、牛顿冷却定律适用的场景" class="headerlink" title="3、牛顿冷却定律适用的场景"></a>3、牛顿冷却定律适用的场景</h4><p>通过阅读资料和实践，单就排序而言，个人觉得牛顿冷却定律适用于投票策略以正方向为主的场景，例如浏览、留言、收藏这些都是加温行为，即使各个行为的权重不同，对于排序的影响都是正向的，唯一的负方向值就是时间。</p>
+<p>如果打分排序的场景还需要同时考虑正方向和负方向的投票行为，牛顿冷却定律就不太适用了。比如同一个内容，有的读者觉得有帮助会顶一顶增加正值，有的读者觉得没意义会踩一踩增加负值，平台希望内容列表的排序规则，即考虑时间因素又结合用户投票还要客观公正，算法可就没有那么简单了！</p>
+<p><strong>最后列举列举了一些相关的文章和参考资料，感兴趣的读者们可以继续延伸阅读。</strong></p>
+<ul>
+<li><a href="https://baike.baidu.com/item/长尾效应/6352848?fr=aladdin" target="_blank" rel="noopener">https://baike.baidu.com/item/长尾效应/6352848?fr=aladdin</a> 长尾效应</li>
+<li><a href="http://www.ruanyifeng.com/blog/2012/03/ranking_algorithm_newton_s_law_of_cooling.html" target="_blank" rel="noopener">http://www.ruanyifeng.com/blog/2012/03/ranking_algorithm_newton_s_law_of_cooling.html</a>  基于用户投票的排名算法（四）：牛顿冷却定律</li>
+<li><a href="http://www.woshipm.com/pd/2970177.html" target="_blank" rel="noopener">http://www.woshipm.com/pd/2970177.html</a>   信息流优化：牛顿冷却定律的应用</li>
+<li><a href="https://www.ruanyifeng.com/blog/2012/02/ranking_algorithm_hacker_news.html" target="_blank" rel="noopener">https://www.ruanyifeng.com/blog/2012/02/ranking_algorithm_hacker_news.html</a> 基于用户投票的排名算法（一）：Delicious和Hacker News</li>
+<li><a href="https://www.ruanyifeng.com/blog/2012/03/ranking_algorithm_reddit.html" target="_blank" rel="noopener">https://www.ruanyifeng.com/blog/2012/03/ranking_algorithm_reddit.html</a> 基于用户投票的排名算法（二）：Reddit</li>
+<li><a href="https://www.ruanyifeng.com/blog/2012/03/ranking_algorithm_stack_overflow.html" target="_blank" rel="noopener">https://www.ruanyifeng.com/blog/2012/03/ranking_algorithm_stack_overflow.html</a> 基于用户投票的排名算法（三）：Stack Overflow</li>
+<li><a href="https://www.ruanyifeng.com/blog/2012/03/ranking_algorithm_newton_s_law_of_cooling.html" target="_blank" rel="noopener">https://www.ruanyifeng.com/blog/2012/03/ranking_algorithm_newton_s_law_of_cooling.html</a> 基于用户投票的排名算法（四）：牛顿冷却定律</li>
+<li><a href="https://www.ruanyifeng.com/blog/2012/03/ranking_algorithm_wilson_score_interval.html" target="_blank" rel="noopener">https://www.ruanyifeng.com/blog/2012/03/ranking_algorithm_wilson_score_interval.html</a> 基于用户投票的排名算法（五）：威尔逊区间</li>
+<li><a href="https://www.ruanyifeng.com/blog/2012/03/ranking_algorithm_bayesian_average.html" target="_blank" rel="noopener">https://www.ruanyifeng.com/blog/2012/03/ranking_algorithm_bayesian_average.html</a> 基于用户投票的排名算法（六）：贝叶斯平均</li>
+<li>得到电子书《不可思议的自然对数》</li>
+</ul>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/%E5%90%8E%E7%AB%AF%E6%95%B0%E6%8D%AE%E6%8E%92%E5%BA%8F/" rel="tag">后端数据排序</a>, <a class="has-link-grey -link" href="/tags/%E6%9C%80%E7%83%AD%E5%86%85%E5%AE%B9%E6%8E%92%E5%BA%8F/" rel="tag">最热内容排序</a>, <a class="has-link-grey -link" href="/tags/%E7%89%9B%E9%A1%BF%E5%86%B7%E5%8D%B4%E5%AE%9A%E5%BE%8B%E7%9A%84%E8%BF%90%E7%94%A8/" rel="tag">牛顿冷却定律的运用</a>, <a class="has-link-grey -link" href="/tags/%E8%87%AA%E7%84%B6%E5%86%B7%E5%8D%B4%E7%AE%97%E6%B3%95/" rel="tag">自然冷却算法</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/01/16/dd-technical/the-evolution-of-iget-hybrid-architecture/">
+                <span class="level-item">【八里庄技术沙龙 - 18期】得到 hybrid 架构的演进之路</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+                
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left is-sticky">
+    
+        
+
+    <div class="card widget" id="toc">
+        <div class="card-content">
+            <div class="menu">
+                <h3 class="menu-label">
+                    目录
+                </h3>
+                <ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#背景介绍">
+        <span class="has-mr-6">1.1</span>
+        <span>背景介绍</span>
+        </a></li></ul><li>
+        <a class="is-flex" href="#一、最热榜单暴露的问题">
+        <span class="has-mr-6">2</span>
+        <span>一、最热榜单暴露的问题</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#问题一-：-分页时会出现重复数据">
+        <span class="has-mr-6">2.1</span>
+        <span>问题一 ： 分页时会出现重复数据</span>
+        </a></li><li>
+        <a class="is-flex" href="#问题二-：-最热榜单被霸屏">
+        <span class="has-mr-6">2.2</span>
+        <span>问题二 ： 最热榜单被霸屏</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#二、问题解决方案分析">
+        <span class="has-mr-6">3</span>
+        <span>二、问题解决方案分析</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1、-分页时会出现重复数据">
+        <span class="has-mr-6">3.1</span>
+        <span>1、 分页时会出现重复数据</span>
+        </a></li><li>
+        <a class="is-flex" href="#2、-最热榜单被霸屏">
+        <span class="has-mr-6">3.2</span>
+        <span>2、 最热榜单被霸屏</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#三、影响因素与实践过程">
+        <span class="has-mr-6">4</span>
+        <span>三、影响因素与实践过程</span>
+        </a><ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#1、时间因子">
+        <span class="has-mr-6">4.1.1</span>
+        <span>1、时间因子</span>
+        </a></li><li>
+        <a class="is-flex" href="#2、用户行为的加温值">
+        <span class="has-mr-6">4.1.2</span>
+        <span>2、用户行为的加温值</span>
+        </a></li><li>
+        <a class="is-flex" href="#3、热度值的计算">
+        <span class="has-mr-6">4.1.3</span>
+        <span>3、热度值的计算</span>
+        </a></li></ul></ul></li><li>
+        <a class="is-flex" href="#思考与结语">
+        <span class="has-mr-6">5</span>
+        <span>思考与结语</span>
+        </a></li></ul>
+            </div>
+        </div>
+    </div>
+
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                标签
+            </h3>
+            <div class="field is-grouped is-grouped-multiline">
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Android/">
+                        <span class="tag">Android</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Docker/">
+                        <span class="tag">Docker</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Elasticsearch/">
+                        <span class="tag">Elasticsearch</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Hybrid/">
+                        <span class="tag">Hybrid</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Java/">
+                        <span class="tag">Java</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Kubernetes/">
+                        <span class="tag">Kubernetes</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/NodeJs/">
+                        <span class="tag">NodeJs</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Nodejs/">
+                        <span class="tag">Nodejs</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Yarn/">
+                        <span class="tag">Yarn</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E4%BA%91%E5%8E%9F%E7%94%9F/">
+                        <span class="tag">云原生</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+                        <span class="tag">八里庄技术沙龙</span>
+                        <span class="tag is-grey">5</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%89%8D%E7%AB%AF/">
+                        <span class="tag">前端</span>
+                        <span class="tag is-grey">6</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%90%8E%E7%AB%AF%E6%95%B0%E6%8D%AE%E6%8E%92%E5%BA%8F/">
+                        <span class="tag">后端数据排序</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+                        <span class="tag">大数据</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">
+                        <span class="tag">并发编程</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/">
+                        <span class="tag">开源项目</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/">
+                        <span class="tag">微服务</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">
+                        <span class="tag">性能优化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E6%9C%80%E7%83%AD%E5%86%85%E5%AE%B9%E6%8E%92%E5%BA%8F/">
+                        <span class="tag">最热内容排序</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86/">
+                        <span class="tag">服务治理</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E7%89%9B%E9%A1%BF%E5%86%B7%E5%8D%B4%E5%AE%9A%E5%BE%8B%E7%9A%84%E8%BF%90%E7%94%A8/">
+                        <span class="tag">牛顿冷却定律的运用</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/">
+                        <span class="tag">组件化</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%87%AA%E7%84%B6%E5%86%B7%E5%8D%B4%E7%AE%97%E6%B3%95/">
+                        <span class="tag">自然冷却算法</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/">
+                        <span class="tag">计算机资源管理</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/">
+                        <span class="tag">资源调度</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered" style="flex-shrink: 1">
+                <div>
+                    
+                    <figure class="image is-128x128 has-mb-6">
+                        <img class="" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="罗辑思维技术团队">
+                    </figure>
+                    
+                    <p class="is-size-4 is-block">
+                        罗辑思维技术团队
+                    </p>
+                    
+                    
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <a href="/archives">
+                        <p class="title has-text-weight-normal">
+                            17
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <a href="/categories">
+                        <p class="title has-text-weight-normal">
+                            7
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <a href="/tags">
+                        <p class="title has-text-weight-normal">
+                            25
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/luojilab" target="_blank">
+                关注我</a>
+        </div>
+        
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/luojilab">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Website" href="https://www.igetget.com">
+                
+                <i class="fab fa-chrome"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2020/03/08/backend/sort-with-law-of-cooling/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="http://piccdn.igetget.com/img/202003/07/202003072246176344549623.png" alt="参考牛顿冷却定律优化最热问题的排序">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-07T16:00:00.000Z">2020-03-08</time></div>
+                    <a href="/2020/03/08/backend/sort-with-law-of-cooling/" class="title has-link-black-ter is-size-6 has-text-weight-normal">参考牛顿冷却定律优化最热问题的排序</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E6%9C%8D%E5%8A%A1%E7%AB%AF/">服务端</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/01/16/dd-technical/the-evolution-of-iget-hybrid-architecture/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/20200116191137.aadcd92b4133e63af053776be169d9a3.png" alt="【八里庄技术沙龙 - 18期】得到 hybrid 架构的演进之路">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-15T16:00:00.000Z">2020-01-16</time></div>
+                    <a href="/2020/01/16/dd-technical/the-evolution-of-iget-hybrid-architecture/" class="title has-link-black-ter is-size-6 has-text-weight-normal">【八里庄技术沙龙 - 18期】得到 hybrid 架构的演进之路</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">八里庄技术沙龙</a> / <a class="has-link-grey -link" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/%E5%89%8D%E7%AB%AF/">前端</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/12/30/zeroteam/k8s-autoscale-guide/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/autoscale-thumbnail2.png" alt="kubernetes 指南 -- 弹性伸缩">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-12-29T16:00:00.000Z">2019-12-30</time></div>
+                    <a href="/2019/12/30/zeroteam/k8s-autoscale-guide/" class="title has-link-black-ter is-size-6 has-text-weight-normal">kubernetes 指南 -- 弹性伸缩</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%9F%BA%E7%A1%80%E6%9E%B6%E6%9E%84/">基础架构</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/12/16/zeroteam/You_have_to_know_the_rate_limit_of_the_series/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NjQ3NzIxNDM2.png" alt="不得不了解系列之限流">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-12-15T16:00:00.000Z">2019-12-16</time></div>
+                    <a href="/2019/12/16/zeroteam/You_have_to_know_the_rate_limit_of_the_series/" class="title has-link-black-ter is-size-6 has-text-weight-normal">不得不了解系列之限流</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%9F%BA%E7%A1%80%E6%9E%B6%E6%9E%84/">基础架构</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/11/08/fontend/grid/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTYyODQwMTc5.png" alt="Grid 布局初探">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-07T16:00:00.000Z">2019-11-08</time></div>
+                    <a href="/2019/11/08/fontend/grid/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Grid 布局初探</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            链接
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="https://www.igetget.com/join" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">得到 App 校园招聘</span>
+                    </span>
+                    <span class="level-right">
+                        <span class="level-item tag">www.igetget.com</span>
+                    </span>
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/">
+            <span class="level-start">
+                <span class="level-item">八里庄技术沙龙</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a><ul><li>
+        <a class="level is-marginless" href="/categories/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/%E5%89%8D%E7%AB%AF/">
+            <span class="level-start">
+                <span class="level-item">前端</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li></ul></li><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/">
+            <span class="level-start">
+                <span class="level-item">前端</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a><ul><li>
+        <a class="level is-marginless" href="/categories/%E5%89%8D%E7%AB%AF/NodeJs/">
+            <span class="level-start">
+                <span class="level-item">NodeJs</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li></ul></li><li>
+        <a class="level is-marginless" href="/categories/%E5%9F%BA%E7%A1%80%E6%9E%B6%E6%9E%84/">
+            <span class="level-start">
+                <span class="level-item">基础架构</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">
+            <span class="level-start">
+                <span class="level-item">大数据</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/%E6%9C%8D%E5%8A%A1%E7%AB%AF/">
+            <span class="level-start">
+                <span class="level-item">服务端</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/Android/" style="font-size: 10px;">Android</a> <a href="/tags/Docker/" style="font-size: 13.33px;">Docker</a> <a href="/tags/Elasticsearch/" style="font-size: 10px;">Elasticsearch</a> <a href="/tags/Hybrid/" style="font-size: 10px;">Hybrid</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Kubernetes/" style="font-size: 13.33px;">Kubernetes</a> <a href="/tags/NodeJs/" style="font-size: 10px;">NodeJs</a> <a href="/tags/Nodejs/" style="font-size: 10px;">Nodejs</a> <a href="/tags/Yarn/" style="font-size: 10px;">Yarn</a> <a href="/tags/%E4%BA%91%E5%8E%9F%E7%94%9F/" style="font-size: 10px;">云原生</a> <a href="/tags/%E5%85%AB%E9%87%8C%E5%BA%84%E6%8A%80%E6%9C%AF%E6%B2%99%E9%BE%99/" style="font-size: 16.67px;">八里庄技术沙龙</a> <a href="/tags/%E5%89%8D%E7%AB%AF/" style="font-size: 20px;">前端</a> <a href="/tags/%E5%90%8E%E7%AB%AF%E6%95%B0%E6%8D%AE%E6%8E%92%E5%BA%8F/" style="font-size: 10px;">后端数据排序</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 10px;">大数据</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" style="font-size: 10px;">并发编程</a> <a href="/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/" style="font-size: 10px;">开源项目</a> <a href="/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/" style="font-size: 10px;">微服务</a> <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" style="font-size: 10px;">性能优化</a> <a href="/tags/%E6%9C%80%E7%83%AD%E5%86%85%E5%AE%B9%E6%8E%92%E5%BA%8F/" style="font-size: 10px;">最热内容排序</a> <a href="/tags/%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86/" style="font-size: 13.33px;">服务治理</a> <a href="/tags/%E7%89%9B%E9%A1%BF%E5%86%B7%E5%8D%B4%E5%AE%9A%E5%BE%8B%E7%9A%84%E8%BF%90%E7%94%A8/" style="font-size: 10px;">牛顿冷却定律的运用</a> <a href="/tags/%E7%BB%84%E4%BB%B6%E5%8C%96/" style="font-size: 10px;">组件化</a> <a href="/tags/%E8%87%AA%E7%84%B6%E5%86%B7%E5%8D%B4%E7%AE%97%E6%B3%95/" style="font-size: 10px;">自然冷却算法</a> <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" style="font-size: 10px;">计算机资源管理</a> <a href="/tags/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" style="font-size: 13.33px;">资源调度</a>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+        </div>
+    
+</div>
+
+                <!-- post 页面不展示右侧 -->
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://piccdn.luojilab.com/fe-oss/default/MTU3NTUzMTgxMjYw.png" alt="参考牛顿冷却定律优化最热问题的排序" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 韩宇斌&nbsp;
+                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="https://github.com/luojilab">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+<script>
+var IcarusThemeSettings = {
+    article: {
+        highlight: {
+            clipboard: true,
+            fold: 'unfolded'
+        }
+    }
+};
+</script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+
+
+
+    
+    
+<script src="/js/animation.js"></script>
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+<script src="/js/gallery.js" defer></script>
+
+    
+    
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+    
+    
+<!-- <a id="back-to-top" title="回到顶端" href="javascript:;"> -->
+<a id="back-to-top" title="回到顶端">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+
+</html>
